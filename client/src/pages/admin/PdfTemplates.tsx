@@ -6,6 +6,7 @@ import {
   FileInput,
   Grid,
   Group,
+  Modal,
   Select,
   Stack,
   Text,
@@ -14,6 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -45,11 +47,13 @@ export function PdfTemplates() {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<PdfTemplate | null>(null);
   const [isNew, setIsNew] = useState(true);
+  const [opened, { open, close }] = useDisclosure(false);
 
   const query = useQuery({ queryKey: ["pdf-templates"], queryFn: () => fetchPdfTemplates(true) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["pdf-templates"] });
 
   const form = useForm<PdfTemplateInput>({ initialValues: emptyValues });
+  const createForm = useForm({ initialValues: { name: "", quotationType: null as "DPD" | "NON_DPD" | null } });
 
   const saveMutation = useMutation({
     mutationFn: (values: PdfTemplateInput) => (selected ? updatePdfTemplate(selected.id, values) : createPdfTemplate(values)),
@@ -70,11 +74,13 @@ export function PdfTemplates() {
   const deactivateMutation = useMutation({
     mutationFn: deactivatePdfTemplate,
     onSuccess: () => {
+      notifications.show({ color: "green", message: "Template deleted" });
       invalidate();
       setSelected(null);
       setIsNew(true);
       form.setValues(emptyValues);
     },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
   });
 
   function selectTemplate(template: PdfTemplate) {
@@ -93,11 +99,22 @@ export function PdfTemplates() {
     });
   }
 
-  function startNew() {
-    setSelected(null);
-    setIsNew(true);
-    form.setValues(emptyValues);
-  }
+  const createMutation = useMutation({
+    mutationFn: (values: { name: string; quotationType: "DPD" | "NON_DPD" | null }) =>
+      createPdfTemplate({
+        ...emptyValues,
+        name: values.name,
+        quotationType: values.quotationType,
+      }),
+    onSuccess: (template) => {
+      notifications.show({ color: "green", message: "PDF template created" });
+      invalidate();
+      selectTemplate(template);
+      close();
+      createForm.reset();
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not create template", message: err.message }),
+  });
 
   const values = form.values;
 
@@ -105,14 +122,22 @@ export function PdfTemplates() {
     <div>
       <Group justify="space-between" mb="md">
         <Title order={2}>PDF Templates</Title>
-        <Button onClick={startNew}>New template</Button>
+        <Button onClick={open}>New template</Button>
       </Group>
 
       <Grid>
         <Grid.Col span={3}>
           <Stack gap="xs">
             {query.data?.map((template) => (
-              <Card key={template.id} style={{ cursor: "pointer" }} onClick={() => selectTemplate(template)}>
+              <Card
+                key={template.id}
+                withBorder
+                style={{
+                  cursor: "pointer",
+                  borderColor: selected?.id === template.id ? "var(--mantine-primary-color-filled)" : undefined,
+                }}
+                onClick={() => selectTemplate(template)}
+              >
                 <Group justify="space-between">
                   <Text fw={600} size="sm">
                     {template.name}
@@ -168,8 +193,18 @@ export function PdfTemplates() {
                         >
                           Set as default
                         </Button>
-                        <Button variant="light" color="red" onClick={() => deactivateMutation.mutate(selected.id)}>
-                          Deactivate
+                        <Button
+                          variant="light"
+                          color="red"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to delete this PDF template?")) {
+                              deactivateMutation.mutate(selected.id);
+                            }
+                          }}
+                          loading={deactivateMutation.isPending}
+                          disabled={selected.isDefault}
+                        >
+                          Delete template
                         </Button>
                       </>
                     )}
@@ -202,6 +237,27 @@ export function PdfTemplates() {
           </Card>
         </Grid.Col>
       </Grid>
+
+      <Modal opened={opened} onClose={close} title="New PDF template">
+        <form onSubmit={createForm.onSubmit((values) => createMutation.mutate(values))}>
+          <Stack>
+            <TextInput label="Name" required {...createForm.getInputProps("name")} />
+            <Select
+              label="Quotation type"
+              placeholder="Usable for both"
+              clearable
+              data={[
+                { value: "DPD", label: "DPD" },
+                { value: "NON_DPD", label: "Non-DPD" },
+              ]}
+              {...createForm.getInputProps("quotationType")}
+            />
+            <Button type="submit" loading={createMutation.isPending} mt="sm">
+              Create
+            </Button>
+          </Stack>
+        </form>
+      </Modal>
     </div>
   );
 }

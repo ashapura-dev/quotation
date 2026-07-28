@@ -91,7 +91,7 @@ export function QuotationForm() {
       q.lineItems.map((li) => ({
         ...li,
         containerRates: (li.containerBreakdown ?? []).map((cb) => ({
-          containerSizeId: cb.containerSizeId,
+          containerSizeId: Number(cb.containerSizeId),
           rateValue: cb.rate,
         })),
       })),

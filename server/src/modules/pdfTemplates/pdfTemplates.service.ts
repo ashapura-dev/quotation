@@ -1,5 +1,6 @@
 import type { QuotationType } from "@prisma/client";
 import { prisma } from "../../config/db.js";
+import { HttpError } from "../../middleware/errorHandler.js";
 
 export interface PdfTemplateInput {
   name?: string;
@@ -32,7 +33,20 @@ export async function updatePdfTemplate(id: number, input: PdfTemplateInput, log
 }
 
 export async function deactivatePdfTemplate(id: number) {
-  await prisma.pdfTemplate.update({ where: { id }, data: { isActive: false, isDefault: false } });
+  const template = await prisma.pdfTemplate.findUnique({ where: { id } });
+  if (!template) {
+    throw new HttpError(404, "PDF template not found");
+  }
+  if (template.isDefault) {
+    throw new HttpError(400, "Cannot delete the default PDF template");
+  }
+
+  const usedCount = await prisma.quotation.count({ where: { pdfTemplateId: id } });
+  if (usedCount > 0) {
+    throw new HttpError(400, "Cannot delete this PDF template because it is used by one or more quotations");
+  }
+
+  await prisma.pdfTemplate.delete({ where: { id } });
 }
 
 export async function setDefaultPdfTemplate(id: number) {

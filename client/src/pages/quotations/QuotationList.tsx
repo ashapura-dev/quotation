@@ -82,7 +82,7 @@ export function QuotationList() {
         </Group>
       </Group>
 
-      <Group mb="md" gap="sm">
+      <Group mb="md" gap="sm" align="flex-end">
         <TextInput
           placeholder="Search by client name"
           value={search}

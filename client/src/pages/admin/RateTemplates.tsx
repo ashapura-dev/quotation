@@ -21,6 +21,7 @@ import { fetchContainerSizes } from "../../api/containerSizes";
 import {
   createNewRateTemplateVersion,
   createRateTemplate,
+  deactivateRateTemplate,
   fetchRateTemplates,
   saveRateTemplateComponents,
   updateRateTemplateMeta,
@@ -80,6 +81,16 @@ export function RateTemplates() {
       setSelectedId(template.id);
     },
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not create version", message: err.message }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deactivateRateTemplate(selected!.id),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Rate template deleted" });
+      invalidate();
+      setSelectedId(null);
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
   });
 
   function selectTemplate(template: RateTemplate) {
@@ -153,6 +164,19 @@ export function RateTemplates() {
                   </Text>
                 </div>
                 <Group>
+                  <Button
+                    color="red"
+                    variant="light"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this rate template?")) {
+                        deleteMutation.mutate();
+                      }
+                    }}
+                    loading={deleteMutation.isPending}
+                    disabled={selected.isDefault}
+                  >
+                    Delete template
+                  </Button>
                   <Button variant="light" onClick={() => setDefaultMutation.mutate()} disabled={selected.isDefault}>
                     Set as default
                   </Button>

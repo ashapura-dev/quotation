@@ -62,7 +62,20 @@ export async function updateRateTemplate(id: number, input: { name?: string; isD
 }
 
 export async function deactivateRateTemplate(id: number) {
-  await prisma.rateTemplate.update({ where: { id }, data: { isActive: false } });
+  const template = await prisma.rateTemplate.findUnique({ where: { id } });
+  if (!template) {
+    throw new HttpError(404, "Rate template not found");
+  }
+  if (template.isDefault) {
+    throw new HttpError(400, "Cannot delete the default rate template");
+  }
+
+  const usedCount = await prisma.quotation.count({ where: { rateTemplateId: id } });
+  if (usedCount > 0) {
+    throw new HttpError(400, "Cannot delete this rate template because it is used by one or more quotations");
+  }
+
+  await prisma.rateTemplate.delete({ where: { id } });
 }
 
 // ---------- Components ----------

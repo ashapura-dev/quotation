@@ -81,7 +81,7 @@ export function DynamicComponentBuilder({ initialComponents, containerSizes, onC
     commit(
       rows.map((r) => {
         if (r._key !== key) return r;
-        const existing = r.containerRates.filter((cr) => cr.containerSizeId !== containerSizeId);
+        const existing = r.containerRates.filter((cr) => Number(cr.containerSizeId) !== containerSizeId);
         return { ...r, containerRates: [...existing, { containerSizeId, rateValue }] };
       }),
     );
@@ -173,6 +173,7 @@ function ComponentRow({
               onChange={(value) => onUpdate({ fixedValue: Number(value) || 0 })}
               w={140}
               decimalScale={2}
+              min={0}
             />
           )}
           {row.componentType === "PERCENTAGE" && (
@@ -183,6 +184,7 @@ function ComponentRow({
               w={120}
               suffix="%"
               decimalScale={2}
+              min={0}
             />
           )}
           <Switch
@@ -208,7 +210,7 @@ function ComponentRow({
             <Table.Tbody>
               <Table.Tr>
                 {containerSizes.map((size) => {
-                  const rate = row.containerRates.find((r) => r.containerSizeId === size.id);
+                  const rate = row.containerRates.find((r) => Number(r.containerSizeId) === size.id);
                   return (
                     <Table.Td key={size.id}>
                       <NumberInput
@@ -216,6 +218,7 @@ function ComponentRow({
                         value={rate?.rateValue ?? ""}
                         onChange={(value) => onSetContainerRate(size.id, Number(value) || 0)}
                         decimalScale={2}
+                        min={0}
                       />
                     </Table.Td>
                   );
