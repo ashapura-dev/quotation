@@ -31,7 +31,7 @@ export async function listRateTemplates(quotationType?: QuotationType, includeIn
   const templates = await prisma.rateTemplate.findMany({
     where: { quotationType, ...(includeInactive ? {} : { isActive: true }) },
     include: templateInclude,
-    orderBy: [{ name: "asc" }, { version: "desc" }],
+    orderBy: [{ isDefault: "desc" }, { name: "asc" }, { version: "desc" }],
   });
   return templates.map(serializeTemplate);
 }

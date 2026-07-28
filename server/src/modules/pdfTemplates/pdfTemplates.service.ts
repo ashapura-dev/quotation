@@ -16,7 +16,10 @@ export interface PdfTemplateInput {
 export function listPdfTemplates(includeInactive = false) {
   return prisma.pdfTemplate.findMany({
     where: includeInactive ? {} : { isActive: true },
-    orderBy: { name: "asc" },
+    orderBy: [
+      { isDefault: "desc" },
+      { name: "asc" },
+    ],
   });
 }
 

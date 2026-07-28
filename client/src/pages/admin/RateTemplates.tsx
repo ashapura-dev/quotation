@@ -16,7 +16,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { computeQuotationTotals } from "@ashapura/calc-engine";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchContainerSizes } from "../../api/containerSizes";
 import {
   createNewRateTemplateVersion,
@@ -42,6 +42,15 @@ export function RateTemplates() {
   const selected = templatesQuery.data?.find((t) => t.id === selectedId) ?? null;
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["rate-templates"] });
+
+  useEffect(() => {
+    if (templatesQuery.data && selectedId === null) {
+      const defaultTemplate = templatesQuery.data.find((t) => t.isDefault) ?? templatesQuery.data[0];
+      if (defaultTemplate) {
+        selectTemplate(defaultTemplate);
+      }
+    }
+  }, [templatesQuery.data, selectedId]);
 
   const createForm = useForm({ initialValues: { name: "", quotationType: "DPD" as "DPD" | "NON_DPD" } });
 

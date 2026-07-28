@@ -18,7 +18,7 @@ import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createPdfTemplate,
   deactivatePdfTemplate,
@@ -53,6 +53,15 @@ export function PdfTemplates() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["pdf-templates"] });
 
   const form = useForm<PdfTemplateInput>({ initialValues: emptyValues });
+
+  useEffect(() => {
+    if (query.data && selected === null) {
+      const defaultTemplate = query.data.find((t) => t.isDefault) ?? query.data[0];
+      if (defaultTemplate) {
+        selectTemplate(defaultTemplate);
+      }
+    }
+  }, [query.data, selected]);
   const createForm = useForm({ initialValues: { name: "", quotationType: null as "DPD" | "NON_DPD" | null } });
 
   const saveMutation = useMutation({
@@ -155,7 +164,47 @@ export function PdfTemplates() {
         <Grid.Col span={5}>
           <Card>
             <form onSubmit={form.onSubmit((v) => saveMutation.mutate(v))}>
-              <Stack>
+              <Stack gap="md">
+                <Group justify="space-between" mb="xs">
+                  <div>
+                    <Title order={3}>{selected ? selected.name : "New Template"}</Title>
+                    <Text size="sm" c="dimmed">
+                      {selected ? `${selected.quotationType ?? "Any type"}` : "Enter template details below"}
+                    </Text>
+                  </div>
+                  <Group gap="xs">
+                    {!isNew && selected && (
+                      <>
+                        <Button
+                          variant="light"
+                          color="red"
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to delete this PDF template?")) {
+                              deactivateMutation.mutate(selected.id);
+                            }
+                          }}
+                          loading={deactivateMutation.isPending}
+                          disabled={selected.isDefault}
+                        >
+                          Delete template
+                        </Button>
+                        <Button
+                          variant="light"
+                          type="button"
+                          onClick={() => setDefaultMutation.mutate(selected.id)}
+                          disabled={selected.isDefault}
+                        >
+                          Set as default
+                        </Button>
+                      </>
+                    )}
+                    <Button type="submit" loading={saveMutation.isPending}>
+                      Save
+                    </Button>
+                  </Group>
+                </Group>
+
                 <TextInput label="Name" required {...form.getInputProps("name")} />
                 <Select
                   label="Quotation type"
@@ -181,38 +230,6 @@ export function PdfTemplates() {
                 <Textarea label="Header HTML" autosize minRows={2} {...form.getInputProps("headerHtml")} />
                 <Textarea label="Footer HTML" autosize minRows={2} {...form.getInputProps("footerHtml")} />
                 <Textarea label="Terms & conditions" autosize minRows={3} {...form.getInputProps("termsAndConditions")} />
-
-                <Group justify="space-between" mt="sm">
-                  <Group>
-                    {!isNew && selected && (
-                      <>
-                        <Button
-                          variant="light"
-                          onClick={() => setDefaultMutation.mutate(selected.id)}
-                          disabled={selected.isDefault}
-                        >
-                          Set as default
-                        </Button>
-                        <Button
-                          variant="light"
-                          color="red"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to delete this PDF template?")) {
-                              deactivateMutation.mutate(selected.id);
-                            }
-                          }}
-                          loading={deactivateMutation.isPending}
-                          disabled={selected.isDefault}
-                        >
-                          Delete template
-                        </Button>
-                      </>
-                    )}
-                  </Group>
-                  <Button type="submit" loading={saveMutation.isPending}>
-                    Save
-                  </Button>
-                </Group>
               </Stack>
             </form>
           </Card>
