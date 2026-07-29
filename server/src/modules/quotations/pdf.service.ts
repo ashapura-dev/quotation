@@ -31,6 +31,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
     {
       quotationNumber: quotation.quotationNumber,
       quotationType: quotation.quotationType,
+      heading: quotation.quotationType === "NON_DPD" ? "Import Clearance for Non-DPD Cargo" : "Import Clearance for DPD Cargo",
       status: quotation.status,
       createdAt: quotation.createdAt,
       clientName: quotation.clientName,

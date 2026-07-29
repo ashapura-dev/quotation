@@ -91,6 +91,7 @@ export interface QuotationPdfContainer {
 export interface QuotationPdfData {
   quotationNumber: string;
   quotationType: string;
+  heading?: string;
   status: string;
   createdAt: string | Date;
   clientName: string;

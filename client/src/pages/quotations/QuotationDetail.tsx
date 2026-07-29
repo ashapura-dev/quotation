@@ -125,7 +125,10 @@ export function QuotationDetail() {
       <Group justify="space-between" mb="md">
         <div>
           <Title order={2}>{q.quotationNumber}</Title>
-          <Group gap="xs" mt={4}>
+          <Text fw={700} size="md" c="blue" mt={2}>
+            {q.quotationType === "NON_DPD" ? "Import Clearance for Non-DPD Cargo" : "Import Clearance for DPD Cargo"}
+          </Text>
+          <Group gap="xs" mt={6}>
             <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
             <Text size="sm" c="dimmed">
               {q.quotationType} · created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
@@ -200,8 +203,8 @@ export function QuotationDetail() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Particulars</Table.Th>
-              <Table.Th ta="right">20ft Container Rate</Table.Th>
-              <Table.Th ta="right">40ft Container Rate</Table.Th>
+              <Table.Th ta="right">Per 20'</Table.Th>
+              <Table.Th ta="right">Per 40'</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
