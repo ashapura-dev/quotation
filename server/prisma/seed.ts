@@ -74,6 +74,124 @@ async function main() {
     });
   }
 
+  // Template 2: DPD+CFS Nhava Sheva
+  const nhavaDpdTemplate = await prisma.rateTemplate.upsert({
+    where: { id: 2 },
+    update: {
+      name: "DPD+CFS Nhava Sheva",
+      quotationType: "DPD",
+    },
+    create: {
+      id: 2,
+      name: "DPD+CFS Nhava Sheva",
+      quotationType: "DPD",
+      createdById: admin.id,
+    },
+  });
+
+  // Clean components for Template 2
+  await prisma.rateTemplateComponent.deleteMany({
+    where: { rateTemplateId: 2 },
+  });
+
+  // Create components for DPD+CFS Nhava Sheva
+  const componentsDpd = [
+    { label: "Agency / Handling Charges", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 0 },
+    { label: "CFS Charges", componentType: "PER_CONTAINER" as const, sortOrder: 1, rates: { "20FT": 7500, "40FT": 9000 } },
+    { label: "CFS Free Days (10 Days)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 2 },
+    { label: "Scanning Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 3 },
+    { label: "Statutory & Third-Party Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 4 },
+    { label: "Transportation", componentType: "PER_CONTAINER" as const, sortOrder: 5, rates: { "20FT": 21000, "40FT": 23000 } },
+    { label: "CGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 6 },
+    { label: "SGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 7 },
+  ];
+
+  for (const comp of componentsDpd) {
+    const createdComp = await prisma.rateTemplateComponent.create({
+      data: {
+        rateTemplateId: nhavaDpdTemplate.id,
+        label: comp.label,
+        componentType: comp.componentType,
+        isTax: comp.isTax ?? false,
+        fixedValue: comp.fixedValue ?? null,
+        percentageValue: comp.percentageValue ?? null,
+        sortOrder: comp.sortOrder,
+      },
+    });
+
+    if (comp.componentType === "PER_CONTAINER" && comp.rates) {
+      for (const size of sizes) {
+        const rateVal = comp.rates[size.code as keyof typeof comp.rates] ?? 0;
+        await prisma.rateTemplateContainerRate.create({
+          data: {
+            rateTemplateComponentId: createdComp.id,
+            containerSizeId: size.id,
+            rateValue: rateVal,
+          },
+        });
+      }
+    }
+  }
+
+  // Template 3: Non-DPD Nhava Sheva
+  const nhavaNonDpdTemplate = await prisma.rateTemplate.upsert({
+    where: { id: 3 },
+    update: {
+      name: "Non-DPD Nhava Sheva",
+      quotationType: "NON_DPD",
+    },
+    create: {
+      id: 3,
+      name: "Non-DPD Nhava Sheva",
+      quotationType: "NON_DPD",
+      createdById: admin.id,
+    },
+  });
+
+  // Clean components for Template 3
+  await prisma.rateTemplateComponent.deleteMany({
+    where: { rateTemplateId: 3 },
+  });
+
+  // Create components for Non-DPD Nhava Sheva
+  const componentsNonDpd = [
+    { label: "Agency / Handling Charges", componentType: "PER_CONTAINER" as const, sortOrder: 0, rates: { "20FT": 3000, "40FT": 3500 } },
+    { label: "CFS Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 1 },
+    { label: "CFS Free Days (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 2 },
+    { label: "Scanning Charges (As per Receipt)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 3 },
+    { label: "Statutory & Third-Party Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 4 },
+    { label: "Transportation", componentType: "PER_CONTAINER" as const, sortOrder: 5, rates: { "20FT": 21000, "40FT": 23000 } },
+    { label: "CGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 6 },
+    { label: "SGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 7 },
+  ];
+
+  for (const comp of componentsNonDpd) {
+    const createdComp = await prisma.rateTemplateComponent.create({
+      data: {
+        rateTemplateId: nhavaNonDpdTemplate.id,
+        label: comp.label,
+        componentType: comp.componentType,
+        isTax: comp.isTax ?? false,
+        fixedValue: comp.fixedValue ?? null,
+        percentageValue: comp.percentageValue ?? null,
+        sortOrder: comp.sortOrder,
+      },
+    });
+
+    if (comp.componentType === "PER_CONTAINER" && comp.rates) {
+      for (const size of sizes) {
+        const rateVal = comp.rates[size.code as keyof typeof comp.rates] ?? 0;
+        await prisma.rateTemplateContainerRate.create({
+          data: {
+            rateTemplateComponentId: createdComp.id,
+            containerSizeId: size.id,
+            rateValue: rateVal,
+          },
+        });
+      }
+    }
+  }
+
   await prisma.pdfTemplate.upsert({
     where: { id: 1 },
     update: {},

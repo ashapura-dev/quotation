@@ -40,7 +40,25 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       clientEmail: quotation.clientEmail,
       clientGstin: quotation.clientGstin,
       containers: quotation.containers,
-      lineItems: quotation.lineItems,
+      lineItems: quotation.lineItems.map((li: any) => {
+        let breakdownText = "";
+        if (li.componentType === "PER_CONTAINER" && li.containerBreakdown) {
+          const breakdown = (typeof li.containerBreakdown === "string"
+            ? JSON.parse(li.containerBreakdown)
+            : li.containerBreakdown) as any[];
+          if (Array.isArray(breakdown)) {
+            breakdownText = breakdown
+              .map((b) => `${b.label}: Rs. ${Number(b.rate).toFixed(2)} × ${b.quantity}`)
+              .join(", ");
+          }
+        }
+        return {
+          label: li.label,
+          isTax: li.isTax,
+          computedAmount: Number(li.computedAmount),
+          breakdownText: breakdownText || undefined,
+        };
+      }),
       subtotal: quotation.subtotal,
       taxTotal: quotation.taxTotal,
       otherAdjustmentsTotal: quotation.otherAdjustmentsTotal,

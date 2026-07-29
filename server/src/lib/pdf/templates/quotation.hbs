@@ -60,7 +60,15 @@
     <thead><tr><th>Description</th><th class="amount">Amount</th></tr></thead>
     <tbody>
     {{#each lineItems}}
-      <tr><td>{{this.label}}{{#if this.isTax}} (Tax){{/if}}</td><td class="amount">{{money this.computedAmount}}</td></tr>
+      <tr>
+        <td>
+          {{this.label}}{{#if this.isTax}} (Tax){{/if}}
+          {{#if this.breakdownText}}
+            <div style="font-size: 11px; color: #666; margin-top: 2px;">{{this.breakdownText}}</div>
+          {{/if}}
+        </td>
+        <td class="amount">{{money this.computedAmount}}</td>
+      </tr>
     {{/each}}
     </tbody>
   </table>

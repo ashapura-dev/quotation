@@ -80,6 +80,7 @@ export interface QuotationPdfLineItem {
   label: string;
   isTax: boolean;
   computedAmount: number;
+  breakdownText?: string;
 }
 
 export interface QuotationPdfContainer {

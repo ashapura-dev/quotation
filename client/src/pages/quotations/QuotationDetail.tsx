@@ -234,15 +234,25 @@ export function QuotationDetail() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {q.lineItems.map((li, i) => (
-              <Table.Tr key={i}>
-                <Table.Td>
-                  {li.label} {li.isTax && <Badge size="xs" ml={4}>Tax</Badge>}
-                </Table.Td>
-                <Table.Td>{li.componentType}</Table.Td>
-                <Table.Td ta="right">{li.computedAmount.toFixed(2)}</Table.Td>
-              </Table.Tr>
-            ))}
+            {q.lineItems.map((li, i) => {
+              const breakdown = li.containerBreakdown as any[] | null;
+              return (
+                <Table.Tr key={i}>
+                  <Table.Td>
+                    <div>
+                      {li.label} {li.isTax && <Badge size="xs" ml={4}>Tax</Badge>}
+                    </div>
+                    {li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown) && breakdown.length > 0 && (
+                      <Text size="xs" c="dimmed" style={{ marginTop: 2 }}>
+                        {breakdown.map((b) => `${b.label}: Rs. ${Number(b.rate || 0).toFixed(2)} × ${b.quantity}`).join(", ")}
+                      </Text>
+                    )}
+                  </Table.Td>
+                  <Table.Td>{li.componentType}</Table.Td>
+                  <Table.Td ta="right">{li.computedAmount.toFixed(2)}</Table.Td>
+                </Table.Tr>
+              );
+            })}
           </Table.Tbody>
         </Table>
         <Stack gap={4} mt="md" align="flex-end">
