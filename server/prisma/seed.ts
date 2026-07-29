@@ -31,48 +31,12 @@ async function main() {
     });
   }
 
-  const dpdTemplate = await prisma.rateTemplate.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      id: 1,
-      name: "DPD Standard",
-      quotationType: "DPD",
-      isDefault: true,
-      createdById: admin.id,
-      components: {
-        create: [
-          { label: "Customs Clearance", componentType: "FIXED", fixedValue: 5000, sortOrder: 0 },
-          { label: "Statutory & Third-Party Charges", componentType: "FIXED", fixedValue: 2000, sortOrder: 1 },
-          { label: "CGST", componentType: "PERCENTAGE", isTax: true, percentageValue: 9, sortOrder: 3 },
-          { label: "SGST", componentType: "PERCENTAGE", isTax: true, percentageValue: 9, sortOrder: 4 },
-        ],
-      },
-    },
-  });
-
-  const transportComponent = await prisma.rateTemplateComponent.create({
-    data: {
-      rateTemplateId: dpdTemplate.id,
-      label: "Transportation",
-      componentType: "PER_CONTAINER",
-      sortOrder: 2,
-    },
+  // Delete the old "DPD Standard" template (id: 1) if it exists
+  await prisma.rateTemplate.deleteMany({
+    where: { id: 1 }
   });
 
   const sizes = await prisma.containerSize.findMany();
-  const defaultRates: Record<string, number> = { "20FT": 8000, "40FT": 12000 };
-  for (const size of sizes) {
-    await prisma.rateTemplateContainerRate.upsert({
-      where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: transportComponent.id, containerSizeId: size.id } },
-      update: {},
-      create: {
-        rateTemplateComponentId: transportComponent.id,
-        containerSizeId: size.id,
-        rateValue: defaultRates[size.code] ?? 0,
-      },
-    });
-  }
 
   // Template 2: DPD+CFS Nhava Sheva
   const nhavaDpdTemplate = await prisma.rateTemplate.upsert({
@@ -80,11 +44,13 @@ async function main() {
     update: {
       name: "DPD+CFS Nhava Sheva",
       quotationType: "DPD",
+      isDefault: true,
     },
     create: {
       id: 2,
       name: "DPD+CFS Nhava Sheva",
       quotationType: "DPD",
+      isDefault: true,
       createdById: admin.id,
     },
   });
@@ -139,11 +105,13 @@ async function main() {
     update: {
       name: "Non-DPD Nhava Sheva",
       quotationType: "NON_DPD",
+      isDefault: true,
     },
     create: {
       id: 3,
       name: "Non-DPD Nhava Sheva",
       quotationType: "NON_DPD",
+      isDefault: true,
       createdById: admin.id,
     },
   });
