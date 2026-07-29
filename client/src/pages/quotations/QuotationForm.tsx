@@ -109,6 +109,18 @@ export function QuotationForm() {
     setBuilderKey((k) => k + 1);
   }, [quotationQuery.data]);
 
+  useEffect(() => {
+    if (!isEdit && containerSizesQuery.data && containers.length === 0) {
+      setContainers(
+        containerSizesQuery.data.map((size) => ({
+          containerSizeId: size.id,
+          containerSizeLabel: size.label,
+          quantity: 1,
+        }))
+      );
+    }
+  }, [containerSizesQuery.data, isEdit]);
+
   function applyRateTemplate(templateId: number | null) {
     setRateTemplateId(templateId);
     const template = rateTemplatesQuery.data?.find((t) => t.id === templateId);

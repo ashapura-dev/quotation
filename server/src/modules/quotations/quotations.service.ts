@@ -56,7 +56,7 @@ function toCalcInputs(input: QuotationInput, allSizes: any[]): { components: Com
     return {
       containerSizeId: String(size.id),
       label: size.label,
-      quantity: selected ? selected.quantity : 0,
+      quantity: selected ? selected.quantity : 1,
     };
   });
   return { components, containers };
