@@ -14,7 +14,6 @@ import quotationRoutes from "./modules/quotations/quotations.routes.js";
 import settingsRoutes from "./modules/settings/settings.routes.js";
 import notificationRoutes from "./modules/notifications/notifications.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
-import invoiceRoutes from "./modules/invoices/invoices.routes.js";
 import { env } from "./config/env.js";
 
 export function createApp() {
@@ -37,7 +36,7 @@ export function createApp() {
   app.use("/api/settings", settingsRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/dashboard", dashboardRoutes);
-  app.use("/api/invoices", invoiceRoutes);
+
 
   app.use("/api", notFoundHandler);
 

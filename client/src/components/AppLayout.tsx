@@ -5,7 +5,6 @@ import {
   IconFileText,
   IconLayoutDashboard,
   IconLogout,
-  IconReceipt,
   IconSettings,
   IconTags,
   IconUsers,
@@ -57,7 +56,6 @@ export function AppLayout() {
       <AppShell.Navbar p="md">
         <NavLink component={RouterNavLink} to="/dashboard" label="Dashboard" leftSection={<IconLayoutDashboard size={18} />} />
         <NavLink component={RouterNavLink} to="/quotations" label="Quotations" leftSection={<IconFileText size={18} />} />
-        <NavLink component={RouterNavLink} to="/invoices" label="Invoices" leftSection={<IconReceipt size={18} />} />
         <RoleGate allow={["ADMIN"]}>
           <NavLink component={RouterNavLink} to="/admin/users" label="Users" leftSection={<IconUsers size={18} />} />
           <NavLink component={RouterNavLink} to="/admin/clients" label="Clients" leftSection={<IconUsersGroup size={18} />} />

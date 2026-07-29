@@ -2,8 +2,7 @@
 
 DPD & Non-DPD quotation management for Ashapura Impex: dynamic rate-component
 builder, customizable container sizes, role-based approval workflow (Draft →
-Pending → Approved → Sent), PDF generation & email, dashboard analytics, and
-quotation-to-invoice conversion.
+Pending → Approved → Sent), PDF generation & email, and dashboard analytics.
 
 ## Stack
 
@@ -84,7 +83,7 @@ Use `pm2 logs ashapura-quotation`, `pm2 restart ashapura-quotation`, and
 | `PORT` | API port (default 4000). |
 | `NODE_ENV` | `development` (default) or `production` — controls whether Express serves the built SPA. |
 
-SMTP (for emailing quotation/invoice PDFs) is configured in-app under **Admin
+SMTP (for emailing quotation PDFs) is configured in-app under **Admin
 Settings**, not via environment variables — it's stored in the database
 (password encrypted at rest) so it can be changed without a redeploy.
 

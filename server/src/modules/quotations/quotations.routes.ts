@@ -17,7 +17,6 @@ import { prisma } from "../../config/db.js";
 import { generateQuotationPdf } from "./pdf.service.js";
 import { sendMail } from "../settings/smtp.service.js";
 import { HttpError } from "../../middleware/errorHandler.js";
-import { convertQuotationToInvoice } from "../invoices/invoices.service.js";
 
 const router = Router();
 router.use(authenticate);
@@ -148,13 +147,6 @@ router.delete(
   asyncHandler(async (req, res) => {
     await deleteQuotation(Number(req.params.id), req.user!.id, req.user!.role);
     res.json({ success: true });
-  }),
-);
-
-router.post(
-  "/:id/convert-to-invoice",
-  asyncHandler(async (req, res) => {
-    res.status(201).json({ invoice: await convertQuotationToInvoice(Number(req.params.id), req.user!.id) });
   }),
 );
 

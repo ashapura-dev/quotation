@@ -119,38 +119,3 @@ export async function renderQuotationPdf(quotation: QuotationPdfData, branding: 
   return renderHtmlToPdf(html);
 }
 
-export interface InvoicePdfLineItem {
-  label: string;
-  amount: number;
-}
-
-export interface InvoicePdfData {
-  invoiceNumber: string;
-  quotationNumber?: string | null;
-  paymentStatus: string;
-  issuedAt: string | Date;
-  dueDate?: string | Date | null;
-  clientName: string;
-  clientAddress?: string | null;
-  clientContactPerson?: string | null;
-  clientPhone?: string | null;
-  clientEmail?: string | null;
-  clientGstin?: string | null;
-  lineItems: InvoicePdfLineItem[];
-  subtotal: number;
-  taxTotal: number;
-  grandTotal: number;
-}
-
-export async function renderInvoicePdf(invoice: InvoicePdfData, branding: PdfBranding): Promise<Buffer> {
-  const template = await getTemplate("invoice.hbs");
-  const html = template({
-    ...invoice,
-    issuedAtFormatted: new Date(invoice.issuedAt).toLocaleDateString(),
-    dueDateFormatted: invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : null,
-    paymentStatusClass: invoice.paymentStatus.toLowerCase(),
-    logoDataUri: await logoDataUri(branding.logoPath),
-    ...brandingContext(branding),
-  });
-  return renderHtmlToPdf(html);
-}

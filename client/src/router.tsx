@@ -16,8 +16,6 @@ const Settings = lazy(() => import("./pages/admin/Settings").then((m) => ({ defa
 const QuotationList = lazy(() => import("./pages/quotations/QuotationList").then((m) => ({ default: m.QuotationList })));
 const QuotationForm = lazy(() => import("./pages/quotations/QuotationForm").then((m) => ({ default: m.QuotationForm })));
 const QuotationDetail = lazy(() => import("./pages/quotations/QuotationDetail").then((m) => ({ default: m.QuotationDetail })));
-const InvoiceList = lazy(() => import("./pages/invoices/InvoiceList").then((m) => ({ default: m.InvoiceList })));
-const InvoiceDetail = lazy(() => import("./pages/invoices/InvoiceDetail").then((m) => ({ default: m.InvoiceDetail })));
 
 function withSuspense(element: ReactNode) {
   return (
@@ -47,8 +45,6 @@ export const router = createBrowserRouter([
           { path: "/quotations/new", element: withSuspense(<QuotationForm />) },
           { path: "/quotations/:id", element: withSuspense(<QuotationDetail />) },
           { path: "/quotations/:id/edit", element: withSuspense(<QuotationForm />) },
-          { path: "/invoices", element: withSuspense(<InvoiceList />) },
-          { path: "/invoices/:id", element: withSuspense(<InvoiceDetail />) },
           { path: "/profile", element: <Placeholder title="Profile" /> },
         ],
       },

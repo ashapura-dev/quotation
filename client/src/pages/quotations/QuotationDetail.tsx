@@ -16,7 +16,6 @@ import {
   submitQuotation,
 } from "../../api/quotations";
 import { fetchPdfTemplates } from "../../api/pdfTemplates";
-import { convertQuotationToInvoice } from "../../api/invoices";
 import { useAuth } from "../../hooks/useAuth";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -56,15 +55,6 @@ export function QuotationDetail() {
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
       navigate(`/quotations/${quotation.id}`);
     },
-  });
-
-  const convertMutation = useMutation({
-    mutationFn: () => convertQuotationToInvoice(Number(id)),
-    onSuccess: (invoice) => {
-      notifications.show({ color: "green", message: `Created invoice ${invoice.invoiceNumber}` });
-      navigate(`/invoices/${invoice.id}`);
-    },
-    onError: (err: Error) => notifications.show({ color: "red", title: "Could not convert", message: err.message }),
   });
 
   const errorHandler = (label: string) => (err: Error) =>
@@ -159,11 +149,6 @@ export function QuotationDetail() {
           <Button variant="light" onClick={() => duplicateMutation.mutate()} loading={duplicateMutation.isPending}>
             Duplicate
           </Button>
-          {(q.status === "APPROVED" || q.status === "SENT") && (
-            <Button variant="light" onClick={() => convertMutation.mutate()} loading={convertMutation.isPending}>
-              Convert to Invoice
-            </Button>
-          )}
           {canEdit && (
             <Button variant="light" onClick={() => navigate(`/quotations/${q.id}/edit`)}>
               Edit

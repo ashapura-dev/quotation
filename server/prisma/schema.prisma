@@ -40,12 +40,6 @@ enum NotificationType {
   SENT
 }
 
-enum PaymentStatus {
-  UNPAID
-  PARTIALLY_PAID
-  PAID
-}
-
 // ---------- Users ----------
 
 model User {
@@ -68,7 +62,6 @@ model User {
   revisions           QuotationRevision[]
   auditLogs           AuditLog[]
   notifications       Notification[]
-  createdInvoices     Invoice[]
 
   @@map("users")
 }
@@ -267,7 +260,6 @@ model Quotation {
   statusHistory   QuotationStatusHistory[]
   revisions       QuotationRevision[]
   notifications   Notification[]
-  invoices        Invoice[]
 
   @@index([status])
   @@index([clientName])
@@ -364,42 +356,4 @@ model Notification {
   @@map("notifications")
 }
 
-// ---------- Invoices ----------
 
-model Invoice {
-  id                  Int           @id @default(autoincrement())
-  invoiceNumber       String        @unique
-  quotationId         Int
-  quotation           Quotation     @relation(fields: [quotationId], references: [id])
-  clientName          String
-  clientAddress       String?       @db.Text
-  clientGstin         String?
-  clientContactPerson String?
-  clientPhone         String?
-  clientEmail         String?
-  subtotal            Decimal       @db.Decimal(12, 2)
-  taxTotal             Decimal       @db.Decimal(12, 2)
-  grandTotal          Decimal       @db.Decimal(12, 2)
-  paymentStatus       PaymentStatus @default(UNPAID)
-  issuedAt            DateTime      @default(now())
-  dueDate             DateTime?
-  createdById         Int
-  createdBy           User          @relation(fields: [createdById], references: [id])
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-
-  lineItems InvoiceLineItem[]
-
-  @@map("invoices")
-}
-
-model InvoiceLineItem {
-  id        Int     @id @default(autoincrement())
-  invoiceId Int
-  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  label     String
-  amount    Decimal @db.Decimal(12, 2)
-  sortOrder Int     @default(0)
-
-  @@map("invoice_line_items")
-}
