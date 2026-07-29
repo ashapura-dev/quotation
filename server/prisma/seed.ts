@@ -70,8 +70,6 @@ async function main() {
     { label: "Scanning Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 3 },
     { label: "Statutory & Third-Party Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 4 },
     { label: "Transportation", componentType: "PER_CONTAINER" as const, sortOrder: 5, rates: { "20FT": 21000, "40FT": 23000 } },
-    { label: "CGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 6 },
-    { label: "SGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 7 },
   ];
 
   for (const comp of componentsDpd) {
@@ -131,8 +129,6 @@ async function main() {
     { label: "Scanning Charges (As per Receipt)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 3 },
     { label: "Statutory & Third-Party Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 4 },
     { label: "Transportation", componentType: "PER_CONTAINER" as const, sortOrder: 5, rates: { "20FT": 21000, "40FT": 23000 } },
-    { label: "CGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 6 },
-    { label: "SGST", componentType: "PERCENTAGE" as const, isTax: true, percentageValue: 9, sortOrder: 7 },
   ];
 
   for (const comp of componentsNonDpd) {
