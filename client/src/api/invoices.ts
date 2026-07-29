@@ -38,7 +38,7 @@ export interface InvoiceListResult {
   pageSize: number;
 }
 
-export async function fetchInvoices(filters: { search?: string; paymentStatus?: string; page?: number } = {}): Promise<InvoiceListResult> {
+export async function fetchInvoices(filters: { search?: string; paymentStatus?: string; page?: number; pageSize?: number } = {}): Promise<InvoiceListResult> {
   const { data } = await apiClient.get<InvoiceListResult>("/api/invoices", { params: filters });
   return data;
 }

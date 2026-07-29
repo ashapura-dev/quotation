@@ -1,4 +1,4 @@
-import { Badge, Group, Select, Table, Text, TextInput, Title } from "@mantine/core";
+import { Badge, Group, Pagination, Select, Table, Text, TextInput, Title } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,10 +16,11 @@ export function InvoiceList() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const query = useQuery({
-    queryKey: ["invoices", debouncedSearch, paymentStatus],
-    queryFn: () => fetchInvoices({ search: debouncedSearch || undefined, paymentStatus: paymentStatus || undefined }),
+    queryKey: ["invoices", debouncedSearch, paymentStatus, page],
+    queryFn: () => fetchInvoices({ search: debouncedSearch || undefined, paymentStatus: paymentStatus || undefined, page, pageSize: 10 }),
   });
 
   return (
@@ -29,7 +30,15 @@ export function InvoiceList() {
       </Title>
 
       <Group mb="md">
-        <TextInput placeholder="Search by client name" value={search} onChange={(e) => setSearch(e.currentTarget.value)} w={220} />
+        <TextInput
+          placeholder="Search by client name"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.currentTarget.value);
+            setPage(1);
+          }}
+          w={220}
+        />
         <Select
           placeholder="Payment status"
           clearable
@@ -39,7 +48,10 @@ export function InvoiceList() {
             { value: "PAID", label: "Paid" },
           ]}
           value={paymentStatus}
-          onChange={setPaymentStatus}
+          onChange={(v) => {
+            setPaymentStatus(v);
+            setPage(1);
+          }}
           w={180}
         />
       </Group>
@@ -76,6 +88,16 @@ export function InvoiceList() {
         <Text c="dimmed" mt="md">
           No invoices yet. Convert an Approved or Sent quotation to create one.
         </Text>
+      )}
+
+      {query.data && Math.ceil(query.data.total / query.data.pageSize) > 1 && (
+        <Group justify="center" mt="lg">
+          <Pagination
+            value={page}
+            onChange={setPage}
+            total={Math.ceil(query.data.total / query.data.pageSize)}
+          />
+        </Group>
       )}
     </div>
   );

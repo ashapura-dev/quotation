@@ -49,7 +49,7 @@ export function QuotationList() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     page,
-    pageSize: 20,
+    pageSize: 10,
   };
 
   const query = useQuery({ queryKey: ["quotations", filters], queryFn: () => fetchQuotations(filters) });
