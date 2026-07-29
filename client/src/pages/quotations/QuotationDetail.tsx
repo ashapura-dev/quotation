@@ -191,20 +191,6 @@ export function QuotationDetail() {
         </Group>
       </Card>
 
-      {q.containers.length > 0 && (
-        <Card mb="md">
-          <Text fw={600} mb="xs">
-            Containers
-          </Text>
-          <Group gap="lg">
-            {q.containers.map((c, i) => (
-              <Text key={i} size="sm">
-                {c.containerSizeLabel} × {c.quantity}
-              </Text>
-            ))}
-          </Group>
-        </Card>
-      )}
 
       <Card mb="md">
         <Text fw={600} mb="xs">
@@ -213,39 +199,47 @@ export function QuotationDetail() {
         <Table verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Label</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th ta="right">Amount</Table.Th>
+              <Table.Th>Description</Table.Th>
+              <Table.Th ta="right">20ft Container Rate</Table.Th>
+              <Table.Th ta="right">40ft Container Rate</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {q.lineItems.map((li, i) => {
               const breakdown = li.containerBreakdown as any[] | null;
+              let rate20 = "-";
+              let rate40 = "-";
+
+              if (li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown)) {
+                const entry20 = breakdown.find((b: any) => b.label.includes("20"));
+                const entry40 = breakdown.find((b: any) => b.label.includes("40"));
+                if (entry20 && entry20.rate) rate20 = `Rs. ${Number(entry20.rate).toFixed(2)}`;
+                if (entry40 && entry40.rate) rate40 = `Rs. ${Number(entry40.rate).toFixed(2)}`;
+              } else if (li.componentType === "FIXED") {
+                const val = `Rs. ${Number(li.fixedValue ?? 0).toFixed(2)}`;
+                rate20 = val;
+                rate40 = val;
+              } else if (li.componentType === "PERCENTAGE") {
+                const val = `${Number(li.percentageValue ?? 0).toFixed(2)}%`;
+                rate20 = val;
+                rate40 = val;
+              }
+
               return (
                 <Table.Tr key={i}>
                   <Table.Td>
                     <div>
                       {li.label} {li.isTax && <Badge size="xs" ml={4}>Tax</Badge>}
                     </div>
-                    {li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown) && breakdown.length > 0 && (
-                      <Text size="xs" c="dimmed" style={{ marginTop: 2 }}>
-                        {breakdown.map((b) => `${b.label}: Rs. ${Number(b.rate || 0).toFixed(2)} × ${b.quantity}`).join(", ")}
-                      </Text>
-                    )}
                   </Table.Td>
-                  <Table.Td>{li.componentType}</Table.Td>
-                  <Table.Td ta="right">{li.computedAmount.toFixed(2)}</Table.Td>
+                  <Table.Td ta="right">{rate20}</Table.Td>
+                  <Table.Td ta="right">{rate40}</Table.Td>
                 </Table.Tr>
               );
             })}
           </Table.Tbody>
         </Table>
-        <Stack gap={4} mt="md" align="flex-end">
-          <Text size="sm">Subtotal: {q.subtotal.toFixed(2)}</Text>
-          <Text size="sm">Tax: {q.taxTotal.toFixed(2)}</Text>
-          <Text size="sm">Other adjustments: {q.otherAdjustmentsTotal.toFixed(2)}</Text>
-          <Text fw={700}>Grand total: {q.grandTotal.toFixed(2)}</Text>
-        </Stack>
+
       </Card>
 
       {q.notes && (

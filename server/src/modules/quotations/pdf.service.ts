@@ -41,22 +41,33 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       clientGstin: quotation.clientGstin,
       containers: quotation.containers,
       lineItems: quotation.lineItems.map((li: any) => {
-        let breakdownText = "";
-        if (li.componentType === "PER_CONTAINER" && li.containerBreakdown) {
-          const breakdown = (typeof li.containerBreakdown === "string"
-            ? JSON.parse(li.containerBreakdown)
-            : li.containerBreakdown) as any[];
-          if (Array.isArray(breakdown)) {
-            breakdownText = breakdown
-              .map((b) => `${b.label}: Rs. ${Number(b.rate).toFixed(2)} × ${b.quantity}`)
-              .join(", ");
-          }
+        const breakdown = (typeof li.containerBreakdown === "string"
+          ? JSON.parse(li.containerBreakdown)
+          : li.containerBreakdown) as any[] | null;
+
+        let rate20 = "-";
+        let rate40 = "-";
+
+        if (li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown)) {
+          const entry20 = breakdown.find((b: any) => b.label.includes("20"));
+          const entry40 = breakdown.find((b: any) => b.label.includes("40"));
+          if (entry20 && entry20.rate) rate20 = `Rs. ${Number(entry20.rate).toFixed(2)}`;
+          if (entry40 && entry40.rate) rate40 = `Rs. ${Number(entry40.rate).toFixed(2)}`;
+        } else if (li.componentType === "FIXED") {
+          const val = `Rs. ${Number(li.fixedValue ?? 0).toFixed(2)}`;
+          rate20 = val;
+          rate40 = val;
+        } else if (li.componentType === "PERCENTAGE") {
+          const val = `${Number(li.percentageValue ?? 0).toFixed(2)}%`;
+          rate20 = val;
+          rate40 = val;
         }
+
         return {
           label: li.label,
           isTax: li.isTax,
-          computedAmount: Number(li.computedAmount),
-          breakdownText: breakdownText || undefined,
+          rate20,
+          rate40,
         };
       }),
       subtotal: quotation.subtotal,

@@ -32,7 +32,6 @@
       <div class="number">{{quotationNumber}}</div>
       <div>{{quotationType}} Quotation</div>
       <div>{{createdAtFormatted}}</div>
-      <div class="badge">{{status}}</div>
     </div>
   </div>
 
@@ -45,40 +44,28 @@
     {{#if clientGstin}}<br/>GSTIN: {{clientGstin}}{{/if}}
   </div>
 
-  {{#if containers.length}}
-  <table>
-    <thead><tr><th>Container</th><th class="amount">Quantity</th></tr></thead>
-    <tbody>
-    {{#each containers}}
-      <tr><td>{{this.containerSizeLabel}}</td><td class="amount">{{this.quantity}}</td></tr>
-    {{/each}}
-    </tbody>
-  </table>
-  {{/if}}
 
   <table>
-    <thead><tr><th>Description</th><th class="amount">Amount</th></tr></thead>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="amount">20ft Container Rate</th>
+        <th class="amount">40ft Container Rate</th>
+      </tr>
+    </thead>
     <tbody>
     {{#each lineItems}}
       <tr>
         <td>
           {{this.label}}{{#if this.isTax}} (Tax){{/if}}
-          {{#if this.breakdownText}}
-            <div style="font-size: 11px; color: #666; margin-top: 2px;">{{this.breakdownText}}</div>
-          {{/if}}
         </td>
-        <td class="amount">{{money this.computedAmount}}</td>
+        <td class="amount">{{this.rate20}}</td>
+        <td class="amount">{{this.rate40}}</td>
       </tr>
     {{/each}}
     </tbody>
   </table>
 
-  <div class="totals">
-    <div class="totals-row"><span>Subtotal</span><span>{{money subtotal}}</span></div>
-    <div class="totals-row"><span>Tax</span><span>{{money taxTotal}}</span></div>
-    <div class="totals-row"><span>Other Adjustments</span><span>{{money otherAdjustmentsTotal}}</span></div>
-    <div class="totals-row grand"><span>Grand Total</span><span>{{money grandTotal}}</span></div>
-  </div>
 
   {{#if notes}}<div class="terms"><strong>Notes:</strong> {{notes}}</div>{{/if}}
   {{#if termsAndConditions}}<div class="terms"><strong>Terms &amp; Conditions:</strong><br/>{{termsAndConditions}}</div>{{/if}}

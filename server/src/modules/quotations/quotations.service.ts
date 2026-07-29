@@ -37,7 +37,7 @@ export interface QuotationInput {
   components: QuotationComponentInput[];
 }
 
-function toCalcInputs(input: QuotationInput): { components: ComponentInput[]; containers: SelectedContainerInput[] } {
+function toCalcInputs(input: QuotationInput, allSizes: any[]): { components: ComponentInput[]; containers: SelectedContainerInput[] } {
   const components: ComponentInput[] = input.components.map((c, i) => ({
     id: c.sourceTemplateComponentId ? `tpl-${c.sourceTemplateComponentId}` : `line-${i}`,
     label: c.label,
@@ -51,11 +51,14 @@ function toCalcInputs(input: QuotationInput): { components: ComponentInput[]; co
       rateValue: r.rateValue,
     })),
   }));
-  const containers: SelectedContainerInput[] = input.containers.map((c) => ({
-    containerSizeId: String(c.containerSizeId),
-    label: c.containerSizeLabel,
-    quantity: c.quantity,
-  }));
+  const containers: SelectedContainerInput[] = allSizes.map((size) => {
+    const selected = input.containers.find((c) => c.containerSizeId === size.id);
+    return {
+      containerSizeId: String(size.id),
+      label: size.label,
+      quantity: selected ? selected.quantity : 0,
+    };
+  });
   return { components, containers };
 }
 
@@ -94,7 +97,8 @@ export async function createQuotation(createdById: number, input: QuotationInput
     throw new HttpError(400, "Select at least one container for a per-container rate component to apply");
   }
 
-  const { components, containers } = toCalcInputs(input);
+  const allSizes = await prisma.containerSize.findMany({ where: { isActive: true } });
+  const { components, containers } = toCalcInputs(input, allSizes);
   const totals = computeQuotationTotals(components, containers);
   const quotationNumber = await nextQuotationNumber();
 
@@ -164,7 +168,8 @@ async function assertEditable(id: number, userId: number, role: string) {
 
 export async function updateQuotation(id: number, userId: number, role: string, input: QuotationInput) {
   const existing = await assertEditable(id, userId, role);
-  const { components, containers } = toCalcInputs(input);
+  const allSizes = await prisma.containerSize.findMany({ where: { isActive: true } });
+  const { components, containers } = toCalcInputs(input, allSizes);
   const totals = computeQuotationTotals(components, containers);
 
   const wasLocked = existing.status === "APPROVED" || existing.status === "SENT";
