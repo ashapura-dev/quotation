@@ -199,7 +199,7 @@ export function QuotationDetail() {
         <Table verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Description</Table.Th>
+              <Table.Th>Particulars</Table.Th>
               <Table.Th ta="right">20ft Container Rate</Table.Th>
               <Table.Th ta="right">40ft Container Rate</Table.Th>
             </Table.Tr>
