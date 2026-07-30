@@ -37,7 +37,7 @@ const emptyValues: PdfTemplateInput = {
   primaryColor: "#1c7ed6",
   secondaryColor: "#495057",
   fontFamily: "Inter, sans-serif",
-  headerHtml: "<h1>Ashapura Impex</h1>",
+  headerHtml: "<h1>ashapura quotation</h1>",
   footerHtml: "<p>Thank you for your business.</p>",
   termsAndConditions: "Standard terms and conditions apply.",
   logo: null,

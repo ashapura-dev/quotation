@@ -242,7 +242,9 @@
       <div class="number-label">Quotation No.</div>
       <div class="number-val">{{quotationNumber}}</div>
       <div class="meta-item"><span class="meta-label">Date:</span> {{createdAtFormatted}}</div>
-      <div class="meta-item"><span class="meta-label">Type:</span> {{quotationType}}</div>
+      {{#if showType}}
+        <div class="meta-item"><span class="meta-label">Type:</span> {{quotationType}}</div>
+      {{/if}}
     </div>
   </div>
 
@@ -289,7 +291,7 @@
   <div class="info-sections">
     {{#if notes}}
       <div class="section-box">
-        <div class="section-title">Notes / Exclusions</div>
+        <div class="section-title">Terms &amp; Conditions</div>
         <div class="section-content">{{notes}}</div>
       </div>
     {{/if}}

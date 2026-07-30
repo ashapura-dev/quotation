@@ -1,6 +1,6 @@
 # Ashapura Quotation Management
 
-DPD & Non-DPD quotation management for Ashapura Impex: dynamic rate-component
+DPD & Non-DPD quotation management for ashapura quotation: dynamic rate-component
 builder, customizable container sizes, role-based approval workflow (Draft →
 Pending → Approved → Sent), PDF generation & email, and dashboard analytics.
 

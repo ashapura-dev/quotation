@@ -166,7 +166,7 @@ async function main() {
       name: "Default Template",
       isDefault: true,
       createdById: admin.id,
-      headerHtml: "<h1>Ashapura Impex</h1>",
+      headerHtml: "<h1>ashapura quotation</h1>",
       footerHtml: "<p>Thank you for your business.</p>",
       termsAndConditions: "Standard terms and conditions apply.",
     },

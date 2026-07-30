@@ -287,7 +287,7 @@ export function QuotationForm() {
                 value={pdfTemplateId ? String(pdfTemplateId) : null}
                 onChange={(v) => setPdfTemplateId(v ? Number(v) : null)}
               />
-              <Textarea label="Notes" mt="sm" value={notes} onChange={(e) => setNotes(e.currentTarget.value)} />
+              <Textarea label="Terms and conditions" mt="sm" value={notes} onChange={(e) => setNotes(e.currentTarget.value)} />
             </Card>
           </Stack>
         </Grid.Col>

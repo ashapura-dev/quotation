@@ -131,7 +131,7 @@ export function QuotationDetail() {
           <Group gap="xs" mt={6}>
             <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
             <Text size="sm" c="dimmed">
-              {q.quotationType} · created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
+              {q.quotationType !== "NON_DPD" ? `${q.quotationType} · ` : ""}created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
             </Text>
           </Group>
         </div>
@@ -252,7 +252,7 @@ export function QuotationDetail() {
       {q.notes && (
         <Card mb="md">
           <Text fw={600} mb="xs">
-            Notes
+            Terms and conditions
           </Text>
           <Text size="sm">{q.notes}</Text>
         </Card>
