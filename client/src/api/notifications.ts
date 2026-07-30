@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 
 export interface AppNotification {
   id: number;
-  type: "SUBMITTED_FOR_REVIEW" | "APPROVED" | "REJECTED" | "SENT";
+  type: "SUBMITTED_FOR_REVIEW" | "APPROVED" | "REJECTED" | "SENT_TO_CLIENT" | "APPROVED_BY_CLIENT" | "REJECTED_BY_CLIENT";
   message: string;
   relatedQuotationId: number | null;
   isRead: boolean;

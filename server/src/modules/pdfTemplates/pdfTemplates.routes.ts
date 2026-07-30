@@ -42,7 +42,7 @@ const templateSchema = z.object({
 
 router.post(
   "/",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   uploadLogo.single("logo"),
   asyncHandler(async (req, res) => {
     const input = templateSchema.parse({ ...req.body, quotationType: req.body.quotationType || undefined });
@@ -53,7 +53,7 @@ router.post(
 
 router.put(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   uploadLogo.single("logo"),
   asyncHandler(async (req, res) => {
     const input = templateSchema.partial().parse({ ...req.body, quotationType: req.body.quotationType || undefined });
@@ -64,7 +64,7 @@ router.put(
 
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     await deactivatePdfTemplate(Number(req.params.id));
     res.json({ success: true });
@@ -73,7 +73,7 @@ router.delete(
 
 router.post(
   "/:id/set-default",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ pdfTemplate: await setDefaultPdfTemplate(Number(req.params.id)) });
   }),

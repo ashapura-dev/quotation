@@ -157,10 +157,10 @@ export async function getQuotation(id: number) {
 
 async function assertEditable(id: number, userId: number, role: string) {
   const quotation = await prisma.quotation.findFirstOrThrow({ where: { id, isDeleted: false } });
-  if (role !== "ADMIN" && quotation.createdById !== userId) {
+  if (role !== "SUPER_ADMIN" && quotation.createdById !== userId) {
     throw new HttpError(403, "You can only edit your own quotations");
   }
-  if (role !== "ADMIN" && quotation.status !== "DRAFT") {
+  if (role !== "SUPER_ADMIN" && quotation.status !== "DRAFT") {
     throw new HttpError(400, "Only Draft quotations can be edited");
   }
   return quotation;
@@ -172,7 +172,11 @@ export async function updateQuotation(id: number, userId: number, role: string, 
   const { components, containers } = toCalcInputs(input, allSizes);
   const totals = computeQuotationTotals(components, containers);
 
-  const wasLocked = existing.status === "APPROVED" || existing.status === "SENT";
+  const wasLocked =
+    existing.status === "APPROVED" ||
+    existing.status === "SENT_TO_CLIENT" ||
+    existing.status === "APPROVED_BY_CLIENT" ||
+    existing.status === "REJECTED_BY_CLIENT";
 
   await prisma.$transaction(async (tx) => {
     await tx.quotationContainer.deleteMany({ where: { quotationId: id } });
@@ -383,7 +387,7 @@ export async function deleteQuotation(id: number, userId: number, role: string) 
   const quotation = await prisma.quotation.findFirst({ where: { id, isDeleted: false } });
   if (!quotation) throw new HttpError(404, "Quotation not found");
 
-  if (role !== "ADMIN") {
+  if (role !== "SUPER_ADMIN") {
     if (quotation.createdById !== userId) throw new HttpError(403, "You can only delete your own quotations");
     if (quotation.status !== "DRAFT") throw new HttpError(400, "Only Draft quotations can be deleted");
   }

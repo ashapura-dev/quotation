@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type Role = "ADMIN" | "STAFF" | "APPROVER";
+export type Role = "SUPER_ADMIN" | "EMPLOYEE" | "TL";
 
 export interface AuthUser {
   id: number;

@@ -40,7 +40,7 @@ const createSchema = z.object({ name: z.string().min(1), quotationType: z.enum([
 
 router.post(
   "/",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     const input = createSchema.parse(req.body);
     res.status(201).json({ rateTemplate: await createRateTemplate({ ...input, createdById: req.user!.id }) });
@@ -51,7 +51,7 @@ const updateSchema = z.object({ name: z.string().min(1).optional(), isDefault: z
 
 router.put(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ rateTemplate: await updateRateTemplate(Number(req.params.id), updateSchema.parse(req.body)) });
   }),
@@ -59,7 +59,7 @@ router.put(
 
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     await deactivateRateTemplate(Number(req.params.id));
     res.json({ success: true });
@@ -68,7 +68,7 @@ router.delete(
 
 router.post(
   "/:id/new-version",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.status(201).json({ rateTemplate: await createNewVersion(Number(req.params.id), req.user!.id) });
   }),
@@ -84,7 +84,7 @@ const componentSchema = z.object({
 
 router.post(
   "/:id/components",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.status(201).json({ rateTemplate: await addComponent(Number(req.params.id), componentSchema.parse(req.body)) });
   }),
@@ -99,7 +99,7 @@ const componentUpdateSchema = z.object({
 
 router.put(
   "/:id/components/:componentId",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({
       rateTemplate: await updateComponent(
@@ -113,7 +113,7 @@ router.put(
 
 router.delete(
   "/:id/components/:componentId",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ rateTemplate: await deleteComponent(Number(req.params.id), Number(req.params.componentId)) });
   }),
@@ -123,7 +123,7 @@ const reorderSchema = z.object({ orderedIds: z.array(z.number()) });
 
 router.patch(
   "/:id/components/reorder",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ rateTemplate: await reorderComponents(Number(req.params.id), reorderSchema.parse(req.body).orderedIds) });
   }),
@@ -141,7 +141,7 @@ const syncComponentSchema = z.object({
 
 router.put(
   "/:id/components",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     const components = z.array(syncComponentSchema).parse(req.body.components);
     res.json({ rateTemplate: await replaceComponents(Number(req.params.id), components) });
@@ -152,7 +152,7 @@ const containerRateSchema = z.object({ containerSizeId: z.number(), rateValue: z
 
 router.put(
   "/:id/components/:componentId/container-rates",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     const { containerSizeId, rateValue } = containerRateSchema.parse(req.body);
     res.json({
@@ -163,7 +163,7 @@ router.put(
 
 router.delete(
   "/:id/components/:componentId/container-rates/:containerSizeId",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({
       rateTemplate: await removeContainerRate(

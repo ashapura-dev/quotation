@@ -24,7 +24,9 @@ const STATUS_COLOR: Record<string, string> = {
   DRAFT: "gray",
   PENDING: "yellow",
   APPROVED: "blue",
-  SENT: "green",
+  SENT_TO_CLIENT: "indigo",
+  APPROVED_BY_CLIENT: "green",
+  REJECTED_BY_CLIENT: "red",
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -95,13 +97,20 @@ export function QuotationList() {
         <Select
           placeholder="Status"
           clearable
-          data={["DRAFT", "PENDING", "APPROVED", "SENT"]}
+          data={[
+            { value: "DRAFT", label: "Draft" },
+            { value: "PENDING", label: "Pending Review" },
+            { value: "APPROVED", label: "Approved" },
+            { value: "SENT_TO_CLIENT", label: "Sent to Client" },
+            { value: "APPROVED_BY_CLIENT", label: "Approved by Client" },
+            { value: "REJECTED_BY_CLIENT", label: "Rejected by Client" },
+          ]}
           value={status}
           onChange={(v) => {
             setStatus(v);
             setPage(1);
           }}
-          w={140}
+          w={160}
         />
         <Select
           placeholder="Type"
@@ -153,7 +162,7 @@ export function QuotationList() {
         <Table.Tbody>
           {query.data?.quotations.map((q) => {
             const canDelete =
-              user?.role === "ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
+              user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
             return (
               <Table.Tr key={q.id}>
                 <Table.Td style={{ cursor: "pointer" }} onClick={() => navigate(`/quotations/${q.id}`)}>

@@ -10,9 +10,9 @@ datasource db {
 // ---------- Enums ----------
 
 enum Role {
-  ADMIN
-  STAFF
-  APPROVER
+  SUPER_ADMIN
+  EMPLOYEE
+  TL
 }
 
 enum QuotationType {
@@ -30,14 +30,18 @@ enum QuotationStatus {
   DRAFT
   PENDING
   APPROVED
-  SENT
+  SENT_TO_CLIENT
+  APPROVED_BY_CLIENT
+  REJECTED_BY_CLIENT
 }
 
 enum NotificationType {
   SUBMITTED_FOR_REVIEW
   APPROVED
   REJECTED
-  SENT
+  SENT_TO_CLIENT
+  APPROVED_BY_CLIENT
+  REJECTED_BY_CLIENT
 }
 
 // ---------- Users ----------

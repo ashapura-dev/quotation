@@ -17,7 +17,7 @@ async function main() {
       name: "Admin",
       email: ADMIN_EMAIL,
       passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
-      role: "ADMIN",
+      role: "SUPER_ADMIN",
     },
   });
 

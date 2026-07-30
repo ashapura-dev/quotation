@@ -20,7 +20,7 @@ export function Dashboard() {
       <Title order={2} mb="md">
         Welcome back, {user?.name}
       </Title>
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="lg">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} mb="lg">
         <Card>
           <Text c="dimmed" size="sm">
             Draft quotations
@@ -41,16 +41,28 @@ export function Dashboard() {
         </Card>
         <Card>
           <Text c="dimmed" size="sm">
-            Sent
+            Sent to client
           </Text>
-          <Title order={3}>{data?.statusCounts.SENT ?? "—"}</Title>
+          <Title order={3}>{data?.statusCounts.SENT_TO_CLIENT ?? "—"}</Title>
+        </Card>
+        <Card>
+          <Text c="dimmed" size="sm">
+            Approved by client
+          </Text>
+          <Title order={3}>{data?.statusCounts.APPROVED_BY_CLIENT ?? "—"}</Title>
+        </Card>
+        <Card>
+          <Text c="dimmed" size="sm">
+            Rejected by client
+          </Text>
+          <Title order={3}>{data?.statusCounts.REJECTED_BY_CLIENT ?? "—"}</Title>
         </Card>
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, sm: 2 }} mb="lg">
         <Card>
           <Text c="dimmed" size="sm">
-            Draft → Sent conversion rate
+            Conversion rate (Sent or Approved by Client)
           </Text>
           <Title order={3}>{data ? `${data.conversionRate}%` : "—"}</Title>
         </Card>

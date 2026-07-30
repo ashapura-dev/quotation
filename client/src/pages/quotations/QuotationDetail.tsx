@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   approveQuotation,
+  clientApproveQuotation,
+  clientRejectQuotation,
   duplicateQuotation,
   emailQuotation,
   fetchQuotation,
@@ -24,7 +26,9 @@ const STATUS_COLOR: Record<string, string> = {
   DRAFT: "gray",
   PENDING: "yellow",
   APPROVED: "blue",
-  SENT: "green",
+  SENT_TO_CLIENT: "indigo",
+  APPROVED_BY_CLIENT: "green",
+  REJECTED_BY_CLIENT: "red",
 };
 
 export function QuotationDetail() {
@@ -34,6 +38,8 @@ export function QuotationDetail() {
   const { user } = useAuth();
   const [rejectOpened, { open: openReject, close: closeReject }] = useDisclosure(false);
   const [rejectComment, setRejectComment] = useState("");
+  const [clientRejectOpened, { open: openClientReject, close: closeClientReject }] = useDisclosure(false);
+  const [clientRejectComment, setClientRejectComment] = useState("");
   const [emailOpened, { open: openEmail, close: closeEmail }] = useDisclosure(false);
   const [emailTemplateId, setEmailTemplateId] = useState<string | null>(null);
   const [emailToAddress, setEmailToAddress] = useState("");
@@ -92,10 +98,30 @@ export function QuotationDetail() {
   const markSentMutation = useMutation({
     mutationFn: () => markQuotationSent(Number(id)),
     onSuccess: () => {
-      notifications.show({ color: "green", message: "Marked as Sent" });
+      notifications.show({ color: "green", message: "Marked as Sent to Client" });
       invalidateAll();
     },
     onError: errorHandler("Could not mark as sent"),
+  });
+
+  const clientApproveMutation = useMutation({
+    mutationFn: () => clientApproveQuotation(Number(id)),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Quotation approved by client" });
+      invalidateAll();
+    },
+    onError: errorHandler("Could not record client approval"),
+  });
+
+  const clientRejectMutation = useMutation({
+    mutationFn: () => clientRejectQuotation(Number(id), clientRejectComment),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Quotation marked as rejected by client" });
+      invalidateAll();
+      closeClientReject();
+      setClientRejectComment("");
+    },
+    onError: errorHandler("Could not record client rejection"),
   });
 
   const emailMutation = useMutation({
@@ -114,11 +140,12 @@ export function QuotationDetail() {
   if (query.isLoading || !query.data) return <Text>Loading...</Text>;
   const q = query.data;
   const isOwner = user?.id === q.createdById;
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "SUPER_ADMIN";
   const canEdit = (q.status === "DRAFT" || isAdmin) && (isAdmin || isOwner);
-  const canSubmit = q.status === "DRAFT" && (isAdmin || (isOwner && user?.role === "STAFF"));
-  const canApproveReject = q.status === "PENDING" && (isAdmin || user?.role === "APPROVER");
-  const canMarkSent = q.status === "APPROVED" && (isAdmin || (isOwner && user?.role === "STAFF"));
+  const canSubmit = q.status === "DRAFT" && (isAdmin || (isOwner && (user?.role === "EMPLOYEE" || user?.role === "TL")));
+  const canApproveReject = q.status === "PENDING" && (isAdmin || user?.role === "TL");
+  const canMarkSent = q.status === "APPROVED" && (isAdmin || (isOwner && user?.role === "EMPLOYEE"));
+  const canClientApproveReject = q.status === "SENT_TO_CLIENT" && (isAdmin || user?.role === "EMPLOYEE" || user?.role === "TL" || isOwner);
 
   return (
     <div>
@@ -174,8 +201,18 @@ export function QuotationDetail() {
           )}
           {canMarkSent && (
             <Button onClick={() => markSentMutation.mutate()} loading={markSentMutation.isPending}>
-              Mark as Sent
+              Mark as Sent to Client
             </Button>
+          )}
+          {canClientApproveReject && (
+            <>
+              <Button color="red" variant="light" onClick={openClientReject}>
+                Client Rejected
+              </Button>
+              <Button color="green" onClick={() => clientApproveMutation.mutate()} loading={clientApproveMutation.isPending}>
+                Client Approved
+              </Button>
+            </>
           )}
         </Group>
       </Group>
@@ -287,6 +324,21 @@ export function QuotationDetail() {
           />
           <Button color="red" onClick={() => rejectMutation.mutate()} loading={rejectMutation.isPending} disabled={!rejectComment.trim()}>
             Send back to Draft
+          </Button>
+        </Stack>
+      </Modal>
+
+      <Modal opened={clientRejectOpened} onClose={closeClientReject} title="Mark as Rejected by Client">
+        <Stack>
+          <Textarea
+            label="Reason"
+            required
+            value={clientRejectComment}
+            onChange={(e) => setClientRejectComment(e.currentTarget.value)}
+            placeholder="Explain the client's reason for rejecting the quotation"
+          />
+          <Button color="red" onClick={() => clientRejectMutation.mutate()} loading={clientRejectMutation.isPending} disabled={!clientRejectComment.trim()}>
+            Reject Quotation
           </Button>
         </Stack>
       </Modal>

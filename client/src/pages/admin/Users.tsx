@@ -21,16 +21,16 @@ import type { Role } from "../../api/auth";
 import { useAuth } from "../../hooks/useAuth";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
-  { value: "ADMIN", label: "Admin" },
-  { value: "STAFF", label: "Staff" },
-  { value: "APPROVER", label: "Approver" },
+  { value: "SUPER_ADMIN", label: "Super Admin" },
+  { value: "EMPLOYEE", label: "Employee" },
+  { value: "TL", label: "TL" },
 ];
 
 const createSchema = z.object({
   name: z.string().min(1, "Required"),
   email: z.string().email("Enter a valid email"),
   password: z.string().min(8, "At least 8 characters"),
-  role: z.enum(["ADMIN", "STAFF", "APPROVER"]),
+  role: z.enum(["SUPER_ADMIN", "EMPLOYEE", "TL"]),
 });
 
 export function Users() {
@@ -66,7 +66,7 @@ export function Users() {
   });
 
   const form = useForm({
-    initialValues: { name: "", email: "", password: "", role: "STAFF" as Role },
+    initialValues: { name: "", email: "", password: "", role: "EMPLOYEE" as Role },
     validate: zodResolver(createSchema),
   });
 

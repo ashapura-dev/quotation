@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 
 export interface DashboardSummary {
-  statusCounts: Record<"DRAFT" | "PENDING" | "APPROVED" | "SENT", number>;
+  statusCounts: Record<"DRAFT" | "PENDING" | "APPROVED" | "SENT_TO_CLIENT" | "APPROVED_BY_CLIENT" | "REJECTED_BY_CLIENT", number>;
   typeCounts: Record<"DPD" | "NON_DPD", number>;
   conversionRate: number;
   volumeOverTime: { month: string; count: number }[];

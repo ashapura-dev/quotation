@@ -24,7 +24,7 @@ const createSchema = z.object({ code: z.string().min(1), label: z.string().min(1
 
 router.post(
   "/",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.status(201).json({ containerSize: await createContainerSize(createSchema.parse(req.body)) });
   }),
@@ -34,7 +34,7 @@ const updateSchema = z.object({ code: z.string().min(1).optional(), label: z.str
 
 router.put(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ containerSize: await updateContainerSize(Number(req.params.id), updateSchema.parse(req.body)) });
   }),
@@ -42,7 +42,7 @@ router.put(
 
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ containerSize: await deactivateContainerSize(Number(req.params.id)) });
   }),
@@ -52,7 +52,7 @@ const reorderSchema = z.object({ orderedIds: z.array(z.number()) });
 
 router.patch(
   "/reorder",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ containerSizes: await reorderContainerSizes(reorderSchema.parse(req.body).orderedIds) });
   }),

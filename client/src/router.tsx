@@ -49,7 +49,7 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        element: <ProtectedRoute allowedRoles={["ADMIN"]} />,
+        element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />,
         children: [
           {
             element: <AppLayout />,

@@ -192,6 +192,23 @@ router.post(
   }),
 );
 
+router.post(
+  "/:id/client-approve",
+  asyncHandler(async (req, res) => {
+    await applyStatusTransition(Number(req.params.id), "clientApprove", req.user!);
+    res.json({ quotation: await getQuotation(Number(req.params.id)) });
+  }),
+);
+
+router.post(
+  "/:id/client-reject",
+  asyncHandler(async (req, res) => {
+    const { comment } = commentSchema.parse(req.body);
+    await applyStatusTransition(Number(req.params.id), "clientReject", req.user!, comment);
+    res.json({ quotation: await getQuotation(Number(req.params.id)) });
+  }),
+);
+
 router.get(
   "/:id/revisions",
   asyncHandler(async (req, res) => {

@@ -5,7 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { getSmtpSettings, sendTestEmail, updateSmtpSettings } from "./smtp.service.js";
 
 const router = Router();
-router.use(authenticate, requireRole("ADMIN"));
+router.use(authenticate, requireRole("SUPER_ADMIN"));
 
 router.get(
   "/smtp",

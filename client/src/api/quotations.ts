@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import type { RateComponent } from "./rateTemplates";
 
-export type QuotationStatus = "DRAFT" | "PENDING" | "APPROVED" | "SENT";
+export type QuotationStatus = "DRAFT" | "PENDING" | "APPROVED" | "SENT_TO_CLIENT" | "APPROVED_BY_CLIENT" | "REJECTED_BY_CLIENT";
 export type QuotationType = "DPD" | "NON_DPD";
 
 export interface QuotationContainer {
@@ -143,6 +143,16 @@ export async function rejectQuotation(id: number, comment: string): Promise<Quot
 
 export async function markQuotationSent(id: number): Promise<Quotation> {
   const { data } = await apiClient.post<{ quotation: Quotation }>(`/api/quotations/${id}/mark-sent`);
+  return data.quotation;
+}
+
+export async function clientApproveQuotation(id: number): Promise<Quotation> {
+  const { data } = await apiClient.post<{ quotation: Quotation }>(`/api/quotations/${id}/client-approve`);
+  return data.quotation;
+}
+
+export async function clientRejectQuotation(id: number, comment: string): Promise<Quotation> {
+  const { data } = await apiClient.post<{ quotation: Quotation }>(`/api/quotations/${id}/client-reject`, { comment });
   return data.quotation;
 }
 

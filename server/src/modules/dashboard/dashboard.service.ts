@@ -23,14 +23,24 @@ export async function getDashboardSummary() {
     }),
   ]);
 
-  const statusCounts = { DRAFT: 0, PENDING: 0, APPROVED: 0, SENT: 0 } as Record<string, number>;
+  const statusCounts = {
+    DRAFT: 0,
+    PENDING: 0,
+    APPROVED: 0,
+    SENT_TO_CLIENT: 0,
+    APPROVED_BY_CLIENT: 0,
+    REJECTED_BY_CLIENT: 0,
+  } as Record<string, number>;
   for (const g of statusGroups) statusCounts[g.status] = g._count._all;
 
   const typeCounts = { DPD: 0, NON_DPD: 0 } as Record<string, number>;
   for (const g of typeGroups) typeCounts[g.quotationType] = g._count._all;
 
   const totalActive = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-  const conversionRate = totalActive > 0 ? Math.round((statusCounts.SENT / totalActive) * 1000) / 10 : 0;
+  const conversionRate =
+    totalActive > 0
+      ? Math.round(((statusCounts.SENT_TO_CLIENT + statusCounts.APPROVED_BY_CLIENT) / totalActive) * 1000) / 10
+      : 0;
 
   const volumeMap = new Map<string, number>();
   for (let i = 0; i < 6; i++) {
