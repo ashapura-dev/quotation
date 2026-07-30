@@ -31,15 +31,7 @@ import { fetchRateTemplates, type RateComponent, type RateTemplate } from "../..
 import { ContainerPicker } from "../../components/ContainerPicker";
 import { DynamicComponentBuilder } from "../../components/DynamicComponentBuilder";
 
-const NHAVA_SHEVA_DEFAULT_NOTES = `Please note:-
-NN must be shared at least 8 working days prior to the shipment's arrival at nn@ashapura.in id. Failure to do so may attract additional charges.
-Scanning/ Scan Mismatch/Seal mismatch / examination (if applicable) will be at actual asper CFS tariff & customs norms.
-Any incidental or additional charges will be on actuals with prior approval, if applicable.
-All relevant documents or justification to be presented in case if any query is raised by customs.
-Vehicle Detention: In case of transportation, Rs.2500 per container per day will be applicable if the vehicle is held for more than 24 hours at both port/plant.
-Outside Weighment charges at actual (if required).
 
-Payment terms – Third party complete advance // rest within 15 days from date of Ashapura E-invoice.`;
 
 function templateComponentsToDraft(template: RateTemplate): RateComponent[] {
   return template.components
@@ -127,9 +119,6 @@ export function QuotationForm() {
     if (template) {
       setComponents(templateComponentsToDraft(template));
       setBuilderKey((k) => k + 1);
-      if (template.name.toLowerCase().includes("nhava")) {
-        setNotes(NHAVA_SHEVA_DEFAULT_NOTES);
-      }
     }
   }
 

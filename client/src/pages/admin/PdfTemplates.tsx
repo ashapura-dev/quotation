@@ -39,7 +39,15 @@ const emptyValues: PdfTemplateInput = {
   fontFamily: "Inter, sans-serif",
   headerHtml: "<h1>ashapura quotation</h1>",
   footerHtml: "<p>Thank you for your business.</p>",
-  termsAndConditions: "Standard terms and conditions apply.",
+  termsAndConditions: `Please note:-
+NN must be shared at least 8 working days prior to the shipment's arrival at nn@ashapura.in id. Failure to do so may attract additional charges.
+Scanning/ Scan Mismatch/Seal mismatch / examination (if applicable) will be at actual asper CFS tariff & customs norms.
+Any incidental or additional charges will be on actuals with prior approval, if applicable.
+All relevant documents or justification to be presented in case if any query is raised by customs.
+Vehicle Detention: In case of transportation, Rs.2500 per container per day will be applicable if the vehicle is held for more than 24 hours at both port/plant.
+Outside Weighment charges at actual (if required).
+
+Payment terms – Third party complete advance // rest within 15 days from date of Ashapura E-invoice.`,
   logo: null,
 };
 
