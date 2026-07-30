@@ -365,7 +365,10 @@ export async function listQuotations(filters: QuotationFilters) {
     prisma.quotation.count({ where }),
     prisma.quotation.findMany({
       where,
-      include: { createdBy: { select: { id: true, name: true } } },
+      include: {
+        createdBy: { select: { id: true, name: true } },
+        approvedBy: { select: { id: true, name: true } },
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,

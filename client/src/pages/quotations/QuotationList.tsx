@@ -155,6 +155,7 @@ export function QuotationList() {
             <Table.Th>Status</Table.Th>
             <Table.Th>Grand total</Table.Th>
             <Table.Th>Created by</Table.Th>
+            <Table.Th>Approved by</Table.Th>
             <Table.Th>Date</Table.Th>
             <Table.Th />
           </Table.Tr>
@@ -175,6 +176,7 @@ export function QuotationList() {
                 </Table.Td>
                 <Table.Td>{q.grandTotal.toFixed(2)}</Table.Td>
                 <Table.Td>{q.createdBy?.name}</Table.Td>
+                <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
                 <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
                 <Table.Td>
                   {canDelete && (
