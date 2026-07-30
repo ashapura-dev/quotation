@@ -235,6 +235,7 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
         version: source.version + 1,
         isDefault: source.isDefault,
         createdById,
+        location: source.location,
       },
     });
 
@@ -267,7 +268,7 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
         data: { isDefault: false },
       });
     }
-    await tx.rateTemplate.update({ where: { id: source.id }, data: { isActive: false, isDefault: false } });
+    await tx.rateTemplate.update({ where: { id: source.id }, data: { isDefault: false } });
 
     return clone.id;
   });
