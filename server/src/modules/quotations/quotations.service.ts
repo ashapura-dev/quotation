@@ -1,6 +1,6 @@
 import type { ComponentType, QuotationStatus, QuotationType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
-import { computeQuotationTotals, type ComponentInput, type SelectedContainerInput } from "@ashapura/calc-engine";
+import { computeQuotationTotals, type ComponentInput, type SelectedContainerInput } from "../../calcEngine/index.js";
 import { prisma } from "../../config/db.js";
 import { HttpError } from "../../middleware/errorHandler.js";
 import { nextQuotationNumber } from "./numbering.js";

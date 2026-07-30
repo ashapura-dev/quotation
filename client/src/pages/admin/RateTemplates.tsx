@@ -15,7 +15,7 @@ import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { computeQuotationTotals } from "@ashapura/calc-engine";
+import { computeQuotationTotals } from "../../lib/calcEngine";
 import { useEffect, useMemo, useState } from "react";
 import { fetchContainerSizes } from "../../api/containerSizes";
 import {

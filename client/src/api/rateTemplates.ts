@@ -1,4 +1,4 @@
-import type { ComponentType } from "@ashapura/calc-engine";
+import type { ComponentType } from "../lib/calcEngine";
 import { apiClient } from "./client";
 
 export interface ContainerRate {

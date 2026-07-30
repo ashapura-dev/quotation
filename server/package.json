@@ -15,7 +15,6 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@ashapura/calc-engine": "*",
     "@prisma/client": "^5.20.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
