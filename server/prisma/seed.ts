@@ -47,6 +47,7 @@ async function main() {
       name: "DPD+CFS Nhava Sheva",
       quotationType: "DPD",
       isDefault: true,
+      location: "Nhava Sheva",
     },
     create: {
       id: 2,
@@ -54,6 +55,7 @@ async function main() {
       quotationType: "DPD",
       isDefault: true,
       createdById: admin.id,
+      location: "Nhava Sheva",
     },
   });
 
@@ -106,6 +108,7 @@ async function main() {
       name: "Non-DPD Nhava Sheva",
       quotationType: "NON_DPD",
       isDefault: true,
+      location: "Nhava Sheva",
     },
     create: {
       id: 3,
@@ -113,6 +116,7 @@ async function main() {
       quotationType: "NON_DPD",
       isDefault: true,
       createdById: admin.id,
+      location: "Nhava Sheva",
     },
   });
 

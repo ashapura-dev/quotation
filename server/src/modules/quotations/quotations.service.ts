@@ -32,6 +32,7 @@ export interface QuotationInput {
   clientEmail?: string;
   rateTemplateId?: number | null;
   pdfTemplateId?: number | null;
+  location?: string | null;
   notes?: string;
   containers: QuotationContainerInput[];
   components: QuotationComponentInput[];
@@ -102,6 +103,14 @@ export async function createQuotation(createdById: number, input: QuotationInput
   const totals = computeQuotationTotals(components, containers);
   const quotationNumber = await nextQuotationNumber();
 
+  let location = input.location ?? null;
+  if (!location && input.rateTemplateId) {
+    const tmpl = await prisma.rateTemplate.findUnique({ where: { id: input.rateTemplateId } });
+    if (tmpl?.location) {
+      location = tmpl.location;
+    }
+  }
+
   const created = await prisma.quotation.create({
     data: {
       quotationNumber,
@@ -116,6 +125,7 @@ export async function createQuotation(createdById: number, input: QuotationInput
       clientEmail: input.clientEmail,
       rateTemplateId: input.rateTemplateId ?? null,
       pdfTemplateId: input.pdfTemplateId ?? null,
+      location,
       notes: input.notes,
       subtotal: totals.subtotal,
       taxTotal: totals.taxTotal,
@@ -182,6 +192,14 @@ export async function updateQuotation(id: number, userId: number, role: string, 
     await tx.quotationContainer.deleteMany({ where: { quotationId: id } });
     await tx.quotationLineItem.deleteMany({ where: { quotationId: id } });
 
+    let location = input.location ?? null;
+    if (!location && input.rateTemplateId) {
+      const tmpl = await tx.rateTemplate.findUnique({ where: { id: input.rateTemplateId } });
+      if (tmpl?.location) {
+        location = tmpl.location;
+      }
+    }
+
     await tx.quotation.update({
       where: { id },
       data: {
@@ -195,6 +213,7 @@ export async function updateQuotation(id: number, userId: number, role: string, 
         clientEmail: input.clientEmail,
         rateTemplateId: input.rateTemplateId ?? null,
         pdfTemplateId: input.pdfTemplateId ?? null,
+        location,
         notes: input.notes,
         subtotal: totals.subtotal,
         taxTotal: totals.taxTotal,

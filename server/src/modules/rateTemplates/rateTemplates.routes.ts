@@ -36,7 +36,11 @@ router.get(
   }),
 );
 
-const createSchema = z.object({ name: z.string().min(1), quotationType: z.enum(["DPD", "NON_DPD"]) });
+const createSchema = z.object({
+  name: z.string().min(1),
+  quotationType: z.enum(["DPD", "NON_DPD"]),
+  location: z.string().optional().nullable(),
+});
 
 router.post(
   "/",
@@ -47,7 +51,11 @@ router.post(
   }),
 );
 
-const updateSchema = z.object({ name: z.string().min(1).optional(), isDefault: z.boolean().optional() });
+const updateSchema = z.object({
+  name: z.string().min(1).optional(),
+  isDefault: z.boolean().optional(),
+  location: z.string().optional().nullable(),
+});
 
 router.put(
   "/:id",

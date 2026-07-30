@@ -154,7 +154,7 @@ export function QuotationDetail() {
           <Title order={2}>{q.quotationNumber}</Title>
           <Text fw={700} size="md" c="blue" mt={2}>
             {q.quotationType === "NON_DPD" ? "IMPORT CLEARANCE FOR NON-DPD CARGO" : "IMPORT CLEARANCE FOR DPD CARGO"}
-            {q.rateTemplate?.name ? `-${q.rateTemplate.name}` : ""}
+            {q.location ? ` - ${q.location.toUpperCase()}` : ""}
           </Text>
           <Group gap="xs" mt={6}>
             <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>

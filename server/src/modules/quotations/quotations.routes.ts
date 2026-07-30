@@ -48,6 +48,7 @@ const quotationSchema = z.object({
   clientEmail: z.string().email().optional().or(z.literal("")),
   rateTemplateId: z.number().nullable().optional(),
   pdfTemplateId: z.number().nullable().optional(),
+  location: z.string().optional().nullable(),
   notes: z.string().optional(),
   containers: z.array(containerSchema),
   components: z.array(componentSchema),

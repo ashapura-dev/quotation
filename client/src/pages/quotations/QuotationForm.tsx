@@ -54,6 +54,7 @@ export function QuotationForm() {
   const [clientContactPerson, setClientContactPerson] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [containers, setContainers] = useState<QuotationContainer[]>([]);
   const [components, setComponents] = useState<RateComponent[]>([]);
@@ -87,6 +88,7 @@ export function QuotationForm() {
     setClientContactPerson(q.clientContactPerson ?? "");
     setClientPhone(q.clientPhone ?? "");
     setClientEmail(q.clientEmail ?? "");
+    setLocation(q.location ?? "");
     setNotes(q.notes ?? "");
     setContainers(q.containers);
     setComponents(
@@ -119,6 +121,9 @@ export function QuotationForm() {
     if (template) {
       setComponents(templateComponentsToDraft(template));
       setBuilderKey((k) => k + 1);
+      if (template.location) {
+        setLocation(template.location);
+      }
     }
   }
 
@@ -164,8 +169,9 @@ export function QuotationForm() {
       clientContactPerson: clientContactPerson || undefined,
       clientPhone: clientPhone || undefined,
       clientEmail: clientEmail || undefined,
-      rateTemplateId: quotationType === "DPD" ? rateTemplateId : null,
+      rateTemplateId,
       pdfTemplateId,
+      location: location || undefined,
       notes: notes || undefined,
       containers,
       components,
@@ -223,6 +229,12 @@ export function QuotationForm() {
                   data={rateTemplatesQuery.data?.map((t) => ({ value: String(t.id), label: `${t.name} (v${t.version})` })) ?? []}
                   value={rateTemplateId ? String(rateTemplateId) : null}
                   onChange={(v) => applyRateTemplate(v ? Number(v) : null)}
+                />
+                <TextInput
+                  label="Location"
+                  placeholder="e.g. Nhava Sheva"
+                  value={location}
+                  onChange={(e) => setLocation(e.currentTarget.value)}
                 />
               </Stack>
             </Card>

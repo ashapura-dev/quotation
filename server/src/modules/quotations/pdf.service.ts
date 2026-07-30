@@ -32,7 +32,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       quotationNumber: quotation.quotationNumber,
       quotationType: quotation.quotationType,
       showType: quotation.quotationType !== "NON_DPD",
-      heading: (quotation.quotationType === "NON_DPD" ? "IMPORT CLEARANCE FOR NON-DPD CARGO" : "IMPORT CLEARANCE FOR DPD CARGO") + (quotation.rateTemplate?.name ? `-${quotation.rateTemplate.name}` : ""),
+      heading: (quotation.quotationType === "NON_DPD" ? "IMPORT CLEARANCE FOR NON-DPD CARGO" : "IMPORT CLEARANCE FOR DPD CARGO") + (quotation.location ? ` - ${quotation.location.toUpperCase()}` : ""),
       status: quotation.status,
       createdAt: quotation.createdAt,
       clientName: quotation.clientName,

@@ -44,12 +44,12 @@ export async function getRateTemplateSerialized(id: number) {
   return serializeTemplate(await getRateTemplate(id));
 }
 
-export async function createRateTemplate(input: { name: string; quotationType: QuotationType; createdById: number }) {
+export async function createRateTemplate(input: { name: string; quotationType: QuotationType; createdById: number; location?: string | null }) {
   const template = await prisma.rateTemplate.create({ data: { ...input }, include: templateInclude });
   return serializeTemplate(template);
 }
 
-export async function updateRateTemplate(id: number, input: { name?: string; isDefault?: boolean }) {
+export async function updateRateTemplate(id: number, input: { name?: string; isDefault?: boolean; location?: string | null }) {
   if (input.isDefault) {
     const template = await prisma.rateTemplate.findUniqueOrThrow({ where: { id } });
     await prisma.rateTemplate.updateMany({

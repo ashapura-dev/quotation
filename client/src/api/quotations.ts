@@ -31,6 +31,7 @@ export interface Quotation {
   rateTemplate?: { id: number; name: string } | null;
   pdfTemplateId: number | null;
   pdfTemplate?: { id: number; name: string } | null;
+  location: string | null;
   notes: string | null;
   subtotal: number;
   taxTotal: number;
@@ -58,6 +59,7 @@ export interface QuotationInput {
   clientEmail?: string;
   rateTemplateId?: number | null;
   pdfTemplateId?: number | null;
+  location?: string;
   notes?: string;
   containers: QuotationContainer[];
   components: RateComponent[];

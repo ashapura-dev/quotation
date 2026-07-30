@@ -41,6 +41,12 @@ export function RateTemplates() {
 
   const selected = templatesQuery.data?.find((t) => t.id === selectedId) ?? null;
 
+  const [localLocation, setLocalLocation] = useState("");
+
+  useEffect(() => {
+    setLocalLocation(selected?.location ?? "");
+  }, [selected?.id, selected?.location]);
+
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["rate-templates"] });
 
   useEffect(() => {
@@ -52,7 +58,7 @@ export function RateTemplates() {
     }
   }, [templatesQuery.data, selectedId]);
 
-  const createForm = useForm({ initialValues: { name: "", quotationType: "DPD" as "DPD" | "NON_DPD" } });
+  const createForm = useForm({ initialValues: { name: "", quotationType: "DPD" as "DPD" | "NON_DPD", location: "" } });
 
   const createMutation = useMutation({
     mutationFn: createRateTemplate,
@@ -63,6 +69,14 @@ export function RateTemplates() {
       close();
     },
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not create template", message: err.message }),
+  });
+
+  const updateMetaMutation = useMutation({
+    mutationFn: (meta: { name?: string; location?: string | null }) => updateRateTemplateMeta(selected!.id, meta),
+    onSuccess: () => {
+      invalidate();
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Update failed", message: err.message }),
   });
 
   const saveComponentsMutation = useMutation({
@@ -168,9 +182,24 @@ export function RateTemplates() {
               <Group justify="space-between" mb="md">
                 <div>
                   <Title order={3}>{selected.name}</Title>
-                  <Text size="sm" c="dimmed">
-                    {selected.quotationType} · version {selected.version}
-                  </Text>
+                  <Group gap="xs" mt={4} align="center">
+                    <Text size="sm" c="dimmed">
+                      {selected.quotationType} · version {selected.version}
+                    </Text>
+                    <Text size="sm" c="dimmed">·</Text>
+                    <TextInput
+                      placeholder="Add location (e.g. Nhava Sheva)"
+                      variant="unstyled"
+                      size="sm"
+                      value={localLocation}
+                      styles={{ input: { height: 20, minHeight: 20, color: "var(--mantine-color-dimmed)", fontWeight: 500, textDecoration: "underline", textDecorationStyle: "dashed" } }}
+                      onChange={(e) => setLocalLocation(e.currentTarget.value)}
+                      onBlur={() => {
+                        updateMetaMutation.mutate({ location: localLocation || null });
+                      }}
+                      w={220}
+                    />
+                  </Group>
                 </div>
                 <Group>
                   <Button
@@ -229,6 +258,7 @@ export function RateTemplates() {
         <form onSubmit={createForm.onSubmit((values) => createMutation.mutate(values))}>
           <Stack>
             <TextInput label="Name" required {...createForm.getInputProps("name")} />
+            <TextInput label="Location" placeholder="e.g. Nhava Sheva" {...createForm.getInputProps("location")} />
             <Select
               label="Quotation type"
               data={[
