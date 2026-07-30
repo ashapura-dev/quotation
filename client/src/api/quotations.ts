@@ -28,7 +28,9 @@ export interface Quotation {
   clientPhone: string | null;
   clientEmail: string | null;
   rateTemplateId: number | null;
+  rateTemplate?: { id: number; name: string } | null;
   pdfTemplateId: number | null;
+  pdfTemplate?: { id: number; name: string } | null;
   notes: string | null;
   subtotal: number;
   taxTotal: number;
