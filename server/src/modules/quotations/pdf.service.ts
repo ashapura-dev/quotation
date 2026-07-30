@@ -52,14 +52,18 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
         if (li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown)) {
           const entry20 = breakdown.find((b: any) => b.label.includes("20"));
           const entry40 = breakdown.find((b: any) => b.label.includes("40"));
-          if (entry20 && entry20.rate) rate20 = `Rs. ${Number(entry20.rate).toFixed(2)}`;
-          if (entry40 && entry40.rate) rate40 = `Rs. ${Number(entry40.rate).toFixed(2)}`;
+          if (entry20 && entry20.rate !== undefined && entry20.rate !== null) {
+            rate20 = Number(entry20.rate) === 0 ? "N/A" : `Rs. ${Number(entry20.rate).toFixed(2)}`;
+          }
+          if (entry40 && entry40.rate !== undefined && entry40.rate !== null) {
+            rate40 = Number(entry40.rate) === 0 ? "N/A" : `Rs. ${Number(entry40.rate).toFixed(2)}`;
+          }
         } else if (li.componentType === "FIXED") {
-          const val = `Rs. ${Number(li.fixedValue ?? 0).toFixed(2)}`;
+          const val = Number(li.fixedValue ?? 0) === 0 ? "N/A" : `Rs. ${Number(li.fixedValue).toFixed(2)}`;
           rate20 = val;
           rate40 = val;
         } else if (li.componentType === "PERCENTAGE") {
-          const val = `${Number(li.percentageValue ?? 0).toFixed(2)}%`;
+          const val = Number(li.percentageValue ?? 0) === 0 ? "N/A" : `${Number(li.percentageValue).toFixed(2)}%`;
           rate20 = val;
           rate40 = val;
         }
