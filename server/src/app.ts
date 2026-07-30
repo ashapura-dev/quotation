@@ -2,6 +2,7 @@ import path from "node:path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import morgan from "morgan";
 import { requireXhrHeader } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -20,6 +21,7 @@ export function createApp() {
   const app = express();
 
   app.use(cors({ origin: true, credentials: true }));
+  app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
   app.use(express.json());
   app.use(cookieParser());
   app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
