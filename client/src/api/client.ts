@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
   headers: { "X-Requested-With": "XMLHttpRequest" },
 });
@@ -11,7 +11,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response) {
       let message = error.response.data?.error ?? "Something went wrong";
-      
+
       // If it is a validation error, extract details to show in the frontend
       if (message === "Validation failed" && error.response.data?.details) {
         const { fieldErrors, formErrors } = error.response.data.details;
@@ -30,7 +30,7 @@ apiClient.interceptors.response.use(
           message = `Validation failed: ${messages.join("; ")}`;
         }
       }
-      
+
       return Promise.reject(new Error(message));
     }
     return Promise.reject(error);
