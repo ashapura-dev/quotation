@@ -24,6 +24,7 @@ enum ComponentType {
   FIXED
   PERCENTAGE
   PER_CONTAINER
+  TEXT
 }
 
 enum QuotationStatus {
@@ -138,6 +139,7 @@ model RateTemplateComponent {
   percentageValue Decimal?      @db.Decimal(5, 2)
   sortOrder       Int           @default(0)
   isActive        Boolean       @default(true)
+  textValue       String?       @db.Text
 
   containerRates RateTemplateContainerRate[]
   lineItems      QuotationLineItem[]
@@ -300,6 +302,7 @@ model QuotationLineItem {
   sourceTemplateComponentId Int?
   sourceTemplateComponent  RateTemplateComponent? @relation(fields: [sourceTemplateComponentId], references: [id])
   sortOrder                Int                    @default(0)
+  textValue                String?                @db.Text
   createdAt                DateTime               @default(now())
 
   @@map("quotation_line_items")

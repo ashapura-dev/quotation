@@ -138,6 +138,7 @@ export function RateTemplates() {
         fixedValue: c.fixedValue ?? undefined,
         percentageValue: c.percentageValue ?? undefined,
         containerRates: c.containerRates.map((r) => ({ containerSizeId: String(r.containerSizeId), rateValue: r.rateValue })),
+        textValue: c.textValue ?? undefined,
       })),
       sampleContainers,
     );

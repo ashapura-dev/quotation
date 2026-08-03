@@ -84,10 +84,11 @@ router.post(
 
 const componentSchema = z.object({
   label: z.string().min(1),
-  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER"]),
+  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "TEXT"]),
   isTax: z.boolean().optional(),
   fixedValue: z.number().optional(),
   percentageValue: z.number().optional(),
+  textValue: z.string().nullable().optional(),
 });
 
 router.post(
@@ -103,6 +104,7 @@ const componentUpdateSchema = z.object({
   isTax: z.boolean().optional(),
   fixedValue: z.number().nullable().optional(),
   percentageValue: z.number().nullable().optional(),
+  textValue: z.string().nullable().optional(),
 });
 
 router.put(
@@ -140,11 +142,12 @@ router.patch(
 const syncComponentSchema = z.object({
   id: z.number().optional(),
   label: z.string().min(1),
-  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER"]),
+  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "TEXT"]),
   isTax: z.boolean(),
   fixedValue: z.number().nullable().optional(),
   percentageValue: z.number().nullable().optional(),
   containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number() })).optional(),
+  textValue: z.string().nullable().optional(),
 });
 
 router.put(

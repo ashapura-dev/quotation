@@ -268,6 +268,10 @@ export function QuotationDetail() {
                 const val = Number(li.percentageValue ?? 0) === 0 ? "N/A" : `${Number(li.percentageValue).toFixed(2)}%`;
                 rate20 = val;
                 rate40 = val;
+              } else if (li.componentType === "TEXT") {
+                const val = li.textValue || "-";
+                rate20 = val;
+                rate40 = val;
               }
 
               return (

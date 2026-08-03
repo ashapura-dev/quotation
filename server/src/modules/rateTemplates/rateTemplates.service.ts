@@ -145,6 +145,7 @@ export interface ComponentSyncInput {
   fixedValue?: number | null;
   percentageValue?: number | null;
   containerRates?: { containerSizeId: number; rateValue: number }[];
+  textValue?: string | null;
 }
 
 /**
@@ -178,6 +179,7 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
                 fixedValue: component.fixedValue ?? null,
                 percentageValue: component.percentageValue ?? null,
                 sortOrder: index,
+                textValue: component.textValue ?? null,
               },
             })
           ).id
@@ -191,6 +193,7 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
                 fixedValue: component.fixedValue ?? null,
                 percentageValue: component.percentageValue ?? null,
                 sortOrder: index,
+                textValue: component.textValue ?? null,
               },
             })
           ).id;

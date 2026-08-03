@@ -80,6 +80,16 @@ export function computeQuotationTotals(
         computedAmount: amount,
         containerBreakdown: breakdown,
       });
+    } else if (component.componentType === "TEXT") {
+      fixedAndContainerItems.push({
+        id: component.id,
+        label: component.label,
+        componentType: component.componentType,
+        isTax: component.isTax,
+        sortOrder: component.sortOrder,
+        computedAmount: 0,
+        textValue: component.textValue,
+      });
     }
   }
   subtotal = round2(subtotal);

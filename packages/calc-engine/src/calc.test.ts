@@ -129,4 +129,17 @@ describe("computeQuotationTotals", () => {
     const result = computeQuotationTotals(components, containers);
     expect(result.lineItems.map((li) => li.id)).toEqual(["fixed", "container", "tax"]);
   });
+
+  it("processes TEXT components, preserving sortOrder, setting computedAmount to 0 and keeping textValue", () => {
+    const components: ComponentInput[] = [
+      { id: "1", label: "Some text description", componentType: "TEXT", isTax: false, sortOrder: 0, textValue: "Special terms apply" },
+      { id: "2", label: "Base Charge", componentType: "FIXED", isTax: false, sortOrder: 1, fixedValue: 1000 },
+    ];
+    const result = computeQuotationTotals(components, []);
+    expect(result.subtotal).toBe(1000);
+    expect(result.grandTotal).toBe(1000);
+    expect(result.lineItems[0].id).toBe("1");
+    expect(result.lineItems[0].computedAmount).toBe(0);
+    expect(result.lineItems[0].textValue).toBe("Special terms apply");
+  });
 });

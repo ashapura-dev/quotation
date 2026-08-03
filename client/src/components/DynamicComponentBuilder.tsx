@@ -31,6 +31,7 @@ const TYPE_OPTIONS = [
   { value: "FIXED", label: "Fixed amount" },
   { value: "PERCENTAGE", label: "Percentage of subtotal" },
   { value: "PER_CONTAINER", label: "Per container" },
+  { value: "TEXT", label: "Text" },
 ];
 
 function withKeys(components: RateComponent[]): Row[] {
@@ -47,6 +48,7 @@ function blankRow(): Row {
     fixedValue: 0,
     percentageValue: null,
     containerRates: [],
+    textValue: "",
   };
 }
 
@@ -185,6 +187,14 @@ function ComponentRow({
               suffix="%"
               decimalScale={2}
               min={0}
+            />
+          )}
+          {row.componentType === "TEXT" && (
+            <TextInput
+              placeholder="Text value"
+              value={row.textValue ?? ""}
+              onChange={(e) => onUpdate({ textValue: e.currentTarget.value })}
+              w={140}
             />
           )}
           <Switch

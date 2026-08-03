@@ -18,6 +18,7 @@ export interface RateComponent {
   containerRates: ContainerRate[];
   isActive?: boolean;
   sourceTemplateComponentId?: number | null;
+  textValue?: string | null;
 }
 
 export interface RateTemplate {

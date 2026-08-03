@@ -19,6 +19,7 @@ export interface QuotationComponentInput {
   percentageValue?: number | null;
   containerRates?: { containerSizeId: number; rateValue: number }[];
   sourceTemplateComponentId?: number | null;
+  textValue?: string | null;
 }
 
 export interface QuotationInput {
@@ -51,6 +52,7 @@ function toCalcInputs(input: QuotationInput, allSizes: any[]): { components: Com
       containerSizeId: String(r.containerSizeId),
       rateValue: r.rateValue,
     })),
+    textValue: c.textValue ?? undefined,
   }));
   const containers: SelectedContainerInput[] = allSizes.map((size) => {
     const selected = input.containers.find((c) => c.containerSizeId === size.id);
@@ -150,6 +152,7 @@ export async function createQuotation(createdById: number, input: QuotationInput
           containerBreakdown: (li.containerBreakdown as Prisma.InputJsonValue | undefined) ?? undefined,
           sourceTemplateComponentId: input.components[i].sourceTemplateComponentId ?? null,
           sortOrder: li.sortOrder,
+          textValue: input.components[i].textValue ?? null,
         })),
       },
     },
@@ -241,6 +244,7 @@ export async function updateQuotation(id: number, userId: number, role: string, 
             containerBreakdown: (li.containerBreakdown as Prisma.InputJsonValue | undefined) ?? undefined,
             sourceTemplateComponentId: input.components[i].sourceTemplateComponentId ?? null,
             sortOrder: li.sortOrder,
+            textValue: input.components[i].textValue ?? null,
           })),
         },
       },
@@ -321,6 +325,7 @@ export async function duplicateQuotation(sourceId: number, createdById: number) 
           containerBreakdown: li.containerBreakdown ?? undefined,
           sourceTemplateComponentId: li.sourceTemplateComponentId,
           sortOrder: li.sortOrder,
+          textValue: li.textValue,
         })),
       },
     },

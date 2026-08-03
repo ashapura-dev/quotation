@@ -190,6 +190,7 @@ export function QuotationForm() {
         fixedValue: c.fixedValue ?? undefined,
         percentageValue: c.percentageValue ?? undefined,
         containerRates: c.containerRates.map((r) => ({ containerSizeId: String(r.containerSizeId), rateValue: r.rateValue })),
+        textValue: c.textValue ?? undefined,
       })),
       containers.map((c) => ({ containerSizeId: String(c.containerSizeId), label: c.containerSizeLabel, quantity: c.quantity })),
     );
