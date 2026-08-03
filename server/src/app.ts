@@ -16,12 +16,19 @@ import settingsRoutes from "./modules/settings/settings.routes.js";
 import notificationRoutes from "./modules/notifications/notifications.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 import { env } from "./config/env.js";
+import { logger } from "./utils/logger.js";
 
 export function createApp() {
   const app = express();
 
   app.use(cors({ origin: true, credentials: true }));
-  app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
+  app.use(
+    morgan(env.nodeEnv === "production" ? "combined" : "dev", {
+      stream: {
+        write: (message) => logger.info(message.trim()),
+      },
+    })
+  );
   app.use(express.json());
   app.use(cookieParser());
   app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
