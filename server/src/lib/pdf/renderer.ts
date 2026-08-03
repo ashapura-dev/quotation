@@ -22,6 +22,16 @@ let browserPromise: Promise<Browser> | null = null;
 function getBrowser() {
   if (!browserPromise) {
     browserPromise = puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    browserPromise.then(
+      (browser) => {
+        browser.once("disconnected", () => {
+          browserPromise = null;
+        });
+      },
+      () => {
+        browserPromise = null;
+      }
+    );
   }
   return browserPromise;
 }
