@@ -178,11 +178,18 @@
   .amount-col {
     text-align: right;
     font-weight: 600;
-    width: 140px;
+    width: 120px;
   }
   
   .particulars-col {
     font-weight: 500;
+  }
+
+  .remark-col {
+    text-align: left;
+    width: 140px;
+    font-size: 10px;
+    color: #4A5568;
   }
 
   /* Notes & Terms */
@@ -273,6 +280,7 @@
         <th class="particulars-col">Particulars</th>
         <th class="amount-col">Per 20'</th>
         <th class="amount-col">Per 40'</th>
+        <th class="remark-col">Remark</th>
       </tr>
     </thead>
     <tbody>
@@ -283,6 +291,7 @@
         </td>
         <td class="amount-col">{{this.rate20}}</td>
         <td class="amount-col">{{this.rate40}}</td>
+        <td class="remark-col">{{this.remark}}</td>
       </tr>
     {{/each}}
     </tbody>

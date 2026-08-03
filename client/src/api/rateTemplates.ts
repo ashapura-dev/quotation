@@ -19,6 +19,7 @@ export interface RateComponent {
   isActive?: boolean;
   sourceTemplateComponentId?: number | null;
   textValue?: string | null;
+  remark?: string | null;
 }
 
 export interface RateTemplate {

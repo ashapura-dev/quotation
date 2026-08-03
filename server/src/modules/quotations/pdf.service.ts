@@ -78,6 +78,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
           isTax: li.isTax,
           rate20,
           rate40,
+          remark: li.remark ?? "",
         };
       }),
       subtotal: quotation.subtotal,

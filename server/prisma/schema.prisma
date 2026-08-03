@@ -140,6 +140,7 @@ model RateTemplateComponent {
   sortOrder       Int           @default(0)
   isActive        Boolean       @default(true)
   textValue       String?       @db.Text
+  remark          String?       @db.Text
 
   containerRates RateTemplateContainerRate[]
   lineItems      QuotationLineItem[]
@@ -303,6 +304,7 @@ model QuotationLineItem {
   sourceTemplateComponent  RateTemplateComponent? @relation(fields: [sourceTemplateComponentId], references: [id])
   sortOrder                Int                    @default(0)
   textValue                String?                @db.Text
+  remark                   String?                @db.Text
   createdAt                DateTime               @default(now())
 
   @@map("quotation_line_items")

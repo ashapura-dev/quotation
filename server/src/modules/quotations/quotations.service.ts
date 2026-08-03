@@ -20,6 +20,7 @@ export interface QuotationComponentInput {
   containerRates?: { containerSizeId: number; rateValue: number }[];
   sourceTemplateComponentId?: number | null;
   textValue?: string | null;
+  remark?: string | null;
 }
 
 export interface QuotationInput {
@@ -153,6 +154,7 @@ export async function createQuotation(createdById: number, input: QuotationInput
           sourceTemplateComponentId: input.components[i].sourceTemplateComponentId ?? null,
           sortOrder: li.sortOrder,
           textValue: input.components[i].textValue ?? null,
+          remark: input.components[i].remark ?? null,
         })),
       },
     },
@@ -245,6 +247,7 @@ export async function updateQuotation(id: number, userId: number, role: string, 
             sourceTemplateComponentId: input.components[i].sourceTemplateComponentId ?? null,
             sortOrder: li.sortOrder,
             textValue: input.components[i].textValue ?? null,
+            remark: input.components[i].remark ?? null,
           })),
         },
       },
@@ -326,6 +329,7 @@ export async function duplicateQuotation(sourceId: number, createdById: number) 
           sourceTemplateComponentId: li.sourceTemplateComponentId,
           sortOrder: li.sortOrder,
           textValue: li.textValue,
+          remark: li.remark,
         })),
       },
     },

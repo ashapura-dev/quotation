@@ -30,6 +30,7 @@ const componentSchema = z.object({
   containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number() })).optional(),
   sourceTemplateComponentId: z.number().nullable().optional(),
   textValue: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
 });
 
 const containerSchema = z.object({

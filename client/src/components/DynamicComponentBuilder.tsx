@@ -49,6 +49,7 @@ function blankRow(): Row {
     percentageValue: null,
     containerRates: [],
     textValue: "",
+    remark: "",
   };
 }
 
@@ -197,6 +198,12 @@ function ComponentRow({
               w={140}
             />
           )}
+          <TextInput
+            placeholder="Remark"
+            value={row.remark ?? ""}
+            onChange={(e) => onUpdate({ remark: e.currentTarget.value })}
+            w={180}
+          />
           <Switch
             label="Tax"
             checked={row.isTax}

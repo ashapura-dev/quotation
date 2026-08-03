@@ -243,6 +243,7 @@ export function QuotationDetail() {
               <Table.Th>Particulars</Table.Th>
               <Table.Th ta="right">Per 20'</Table.Th>
               <Table.Th ta="right">Per 40'</Table.Th>
+              <Table.Th>Remark</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -283,6 +284,7 @@ export function QuotationDetail() {
                   </Table.Td>
                   <Table.Td ta="right">{rate20}</Table.Td>
                   <Table.Td ta="right">{rate40}</Table.Td>
+                  <Table.Td>{li.remark || "-"}</Table.Td>
                 </Table.Tr>
               );
             })}

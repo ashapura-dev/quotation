@@ -89,6 +89,7 @@ const componentSchema = z.object({
   fixedValue: z.number().optional(),
   percentageValue: z.number().optional(),
   textValue: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
 });
 
 router.post(
@@ -105,6 +106,7 @@ const componentUpdateSchema = z.object({
   fixedValue: z.number().nullable().optional(),
   percentageValue: z.number().nullable().optional(),
   textValue: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
 });
 
 router.put(
@@ -148,6 +150,7 @@ const syncComponentSchema = z.object({
   percentageValue: z.number().nullable().optional(),
   containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number() })).optional(),
   textValue: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
 });
 
 router.put(
