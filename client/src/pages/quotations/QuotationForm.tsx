@@ -55,7 +55,6 @@ export function QuotationForm() {
   const [location, setLocation] = useState("");
   const [route, setRoute] = useState("");
   const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
   const [containers, setContainers] = useState<QuotationContainer[]>([]);
   const [components, setComponents] = useState<RateComponent[]>([]);
   const [builderKey, setBuilderKey] = useState(0);
@@ -97,7 +96,6 @@ export function QuotationForm() {
     setLocation(q.location ?? "");
     setRoute(q.route ?? "");
     setTitle(q.title ?? "");
-    setNotes(q.notes ?? "");
     setCustomFields(q.customFields ?? {});
     setServicesOffered(q.servicesOffered ?? "");
     setCommodityType(q.commodityType ?? "");
@@ -203,7 +201,6 @@ export function QuotationForm() {
       servicesOffered: servicesOffered || undefined,
       commodityType: commodityType || undefined,
       additionalRemarks: additionalRemarks || undefined,
-      notes: notes || undefined,
       containers,
       components,
     };
@@ -393,7 +390,6 @@ export function QuotationForm() {
             onChange={(v) => setPdfTemplateId(v ? Number(v) : null)}
           />
           <Textarea label="Additional Remarks" mt="sm" value={additionalRemarks} onChange={(e) => setAdditionalRemarks(e.currentTarget.value)} />
-          <Textarea label="Terms and conditions" mt="sm" value={notes} onChange={(e) => setNotes(e.currentTarget.value)} />
         </Card>
 
         <Group justify="flex-end" mt="md" gap="md">
