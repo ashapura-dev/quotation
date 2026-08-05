@@ -60,6 +60,9 @@ export function QuotationForm() {
   const [components, setComponents] = useState<RateComponent[]>([]);
   const [builderKey, setBuilderKey] = useState(0);
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
+  const [servicesOffered, setServicesOffered] = useState("");
+  const [commodityType, setCommodityType] = useState("");
+  const [additionalRemarks, setAdditionalRemarks] = useState("");
 
   const customFieldsQuery = useQuery({ queryKey: ["custom-fields", false], queryFn: () => fetchCustomFields(false) });
 
@@ -96,6 +99,9 @@ export function QuotationForm() {
     setTitle(q.title ?? "");
     setNotes(q.notes ?? "");
     setCustomFields(q.customFields ?? {});
+    setServicesOffered(q.servicesOffered ?? "");
+    setCommodityType(q.commodityType ?? "");
+    setAdditionalRemarks(q.additionalRemarks ?? "");
     setContainers(q.containers);
     setComponents(
       q.lineItems.map((li) => ({
@@ -194,6 +200,9 @@ export function QuotationForm() {
       route: route || undefined,
       title: title || undefined,
       customFields: customFields,
+      servicesOffered: servicesOffered || undefined,
+      commodityType: commodityType || undefined,
+      additionalRemarks: additionalRemarks || undefined,
       notes: notes || undefined,
       containers,
       components,
@@ -252,6 +261,20 @@ export function QuotationForm() {
                 placeholder="e.g. Nhava Sheva to Dharavi"
                 value={route}
                 onChange={(e) => setRoute(e.currentTarget.value)}
+              />
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Services Offered"
+                placeholder="e.g. Origin Clearance"
+                value={servicesOffered}
+                onChange={(e) => setServicesOffered(e.currentTarget.value)}
+              />
+              <TextInput
+                label="Commodity Type"
+                placeholder="e.g. General cargo"
+                value={commodityType}
+                onChange={(e) => setCommodityType(e.currentTarget.value)}
               />
             </Group>
           </Stack>
@@ -369,6 +392,7 @@ export function QuotationForm() {
             value={pdfTemplateId ? String(pdfTemplateId) : null}
             onChange={(v) => setPdfTemplateId(v ? Number(v) : null)}
           />
+          <Textarea label="Additional Remarks" mt="sm" value={additionalRemarks} onChange={(e) => setAdditionalRemarks(e.currentTarget.value)} />
           <Textarea label="Terms and conditions" mt="sm" value={notes} onChange={(e) => setNotes(e.currentTarget.value)} />
         </Card>
 

@@ -231,6 +231,44 @@ export function QuotationDetail() {
         </Group>
       </Card>
 
+      <Card mb="md">
+        <Text fw={600} mb="xs">
+          Shipment Details
+        </Text>
+        <Group gap="xl">
+          {q.servicesOffered && (
+            <div>
+              <Text size="xs" c="dimmed" fw={500}>Services Offered</Text>
+              <Text size="sm" fw={600} mt={2}>{q.servicesOffered}</Text>
+            </div>
+          )}
+          {q.commodityType && (
+            <div>
+              <Text size="xs" c="dimmed" fw={500}>Commodity Type</Text>
+              <Text size="sm" fw={600} mt={2}>{q.commodityType}</Text>
+            </div>
+          )}
+          {q.containers && q.containers.length > 0 && (
+            <div>
+              <Text size="xs" c="dimmed" fw={500}>Containers</Text>
+              <Group gap={6} mt={4}>
+                {q.containers.map((c) => (
+                  <Badge key={c.containerSizeId} variant="outline" size="sm">
+                    {c.quantity} &times; {c.containerSizeLabel}
+                  </Badge>
+                ))}
+              </Group>
+            </div>
+          )}
+        </Group>
+        {q.additionalRemarks && (
+          <div style={{ marginTop: "12px", borderTop: "1px solid #E2E8F0", paddingTop: "8px" }}>
+            <Text size="xs" c="dimmed" fw={500}>Additional Remarks</Text>
+            <Text size="sm" style={{ whiteSpace: "pre-wrap", marginTop: "2px" }}>{q.additionalRemarks}</Text>
+          </div>
+        )}
+      </Card>
+
       {customFieldsQuery.data && (
         (() => {
           const displayedFields = customFieldsQuery.data

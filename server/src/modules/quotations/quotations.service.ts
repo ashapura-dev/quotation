@@ -38,6 +38,9 @@ export interface QuotationInput {
   route?: string | null;
   title?: string | null;
   customFields?: any;
+  servicesOffered?: string | null;
+  commodityType?: string | null;
+  additionalRemarks?: string | null;
   notes?: string;
   containers: QuotationContainerInput[];
   components: QuotationComponentInput[];
@@ -135,6 +138,9 @@ export async function createQuotation(createdById: number, input: QuotationInput
       route: input.route ?? null,
       title: input.title ?? null,
       customFields: input.customFields ?? null,
+      servicesOffered: input.servicesOffered ?? null,
+      commodityType: input.commodityType ?? null,
+      additionalRemarks: input.additionalRemarks ?? null,
       notes: input.notes,
       subtotal: totals.subtotal,
       taxTotal: totals.taxTotal,
@@ -228,6 +234,9 @@ export async function updateQuotation(id: number, userId: number, role: string, 
         route: input.route ?? null,
         title: input.title ?? null,
         customFields: input.customFields ?? null,
+        servicesOffered: input.servicesOffered ?? null,
+        commodityType: input.commodityType ?? null,
+        additionalRemarks: input.additionalRemarks ?? null,
         notes: input.notes,
         subtotal: totals.subtotal,
         taxTotal: totals.taxTotal,
@@ -317,6 +326,9 @@ export async function duplicateQuotation(sourceId: number, createdById: number) 
       route: source.route,
       title: source.title,
       customFields: (source.customFields as any) ?? null,
+      servicesOffered: source.servicesOffered,
+      commodityType: source.commodityType,
+      additionalRemarks: source.additionalRemarks,
       notes: source.notes,
       subtotal: source.subtotal,
       taxTotal: source.taxTotal,

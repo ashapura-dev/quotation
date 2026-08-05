@@ -107,6 +107,10 @@ export interface QuotationPdfData {
   location?: string | null;
   title?: string | null;
   customFields?: Array<{ label: string; value: string }>;
+  servicesOffered?: string | null;
+  commodityType?: string | null;
+  additionalRemarks?: string | null;
+  preparedBy?: string | null;
   status: string;
   createdAt: string | Date;
   clientName: string;

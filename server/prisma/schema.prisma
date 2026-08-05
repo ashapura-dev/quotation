@@ -245,6 +245,10 @@ model Quotation {
   route                  String?
   title                  String?
   customFields           Json?
+  servicesOffered        String?
+  commodityType           String?
+  additionalRemarks      String?         @db.Text
+
 
 
 

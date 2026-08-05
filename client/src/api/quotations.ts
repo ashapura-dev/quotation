@@ -35,6 +35,9 @@ export interface Quotation {
   route: string | null;
   title: string | null;
   customFields: Record<string, any> | null;
+  servicesOffered: string | null;
+  commodityType: string | null;
+  additionalRemarks: string | null;
   notes: string | null;
   subtotal: number;
   taxTotal: number;
@@ -66,6 +69,9 @@ export interface QuotationInput {
   route?: string;
   title?: string;
   customFields?: Record<string, any>;
+  servicesOffered?: string;
+  commodityType?: string;
+  additionalRemarks?: string;
   notes?: string;
   containers: QuotationContainer[];
   components: RateComponent[];

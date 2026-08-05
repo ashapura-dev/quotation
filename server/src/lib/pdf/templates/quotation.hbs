@@ -283,6 +283,32 @@
     </div>
   </div>
 
+  <div class="grid" style="margin-top: -12px; margin-bottom: 22px;">
+    <div class="card" style="padding: 10px 14px;">
+      <div class="card-title" style="margin-bottom: 8px;">Shipment Details</div>
+      <div style="display: flex; gap: 24px; font-size: 11px;">
+        <div style="flex: 1;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase;">Container Details</strong>
+          <div style="margin-top: 3px;">
+            {{#each containers}}
+              <span style="background-color: #E2E8F0; border-radius: 4px; padding: 2px 6px; font-size: 10px; display: inline-block; margin-right: 4px; margin-top: 2px; border: 1px solid #CBD5E1; color: #475569; font-weight: 600;">
+                {{this.quantity}} &times; {{this.containerSizeLabel}}
+              </span>
+            {{/each}}
+          </div>
+        </div>
+        <div style="width: 180px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase;">Services Offered</strong>
+          <div style="margin-top: 3px; color: #334155; font-weight: 600;">{{#if servicesOffered}}{{servicesOffered}}{{else}}-{{/if}}</div>
+        </div>
+        <div style="width: 180px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase;">Commodity Type</strong>
+          <div style="margin-top: 3px; color: #334155; font-weight: 600;">{{#if commodityType}}{{commodityType}}{{else}}-{{/if}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <table>
     <thead>
       <tr>
@@ -307,6 +333,13 @@
   </table>
 
   <div class="info-sections">
+    {{#if additionalRemarks}}
+      <div class="section-box">
+        <div class="section-title">Additional Remarks</div>
+        <div class="section-content">{{additionalRemarks}}</div>
+      </div>
+    {{/if}}
+
     {{#if notes}}
       <div class="section-box">
         <div class="section-title">Terms &amp; Conditions</div>
@@ -321,6 +354,12 @@
       </div>
     {{/if}}
   </div>
+
+  {{#if preparedBy}}
+    <div style="margin-top: 15px; font-size: 11px; color: #4A5568; font-weight: 600; text-align: left; padding-left: 6px;">
+      Prepared by: {{preparedBy}}
+    </div>
+  {{/if}}
 
   <div class="footer">
     {{{footerHtml}}}
