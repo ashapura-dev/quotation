@@ -258,9 +258,6 @@
       {{#if route}}
         <div class="meta-item"><span class="meta-label">Route:</span> {{route}}</div>
       {{/if}}
-      {{#each customFields}}
-        <div class="meta-item"><span class="meta-label">{{this.label}}:</span> {{this.value}}</div>
-      {{/each}}
     </div>
   </div>
 
@@ -308,6 +305,22 @@
       </div>
     </div>
   </div>
+
+  {{#if customFields}}
+    <div class="grid" style="margin-top: -12px; margin-bottom: 22px;">
+      <div class="card" style="padding: 10px 14px;">
+        <div class="card-title" style="margin-bottom: 8px;">Additional Details</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; font-size: 11px;">
+          {{#each customFields}}
+            <div style="min-width: 140px; margin-bottom: 8px;">
+              <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">{{this.label}}</strong>
+              <span style="color: #334155; font-weight: 600;">{{this.value}}</span>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+  {{/if}}
 
   <table>
     <thead>

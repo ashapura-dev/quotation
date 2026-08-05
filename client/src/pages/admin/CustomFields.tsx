@@ -57,9 +57,10 @@ export function CustomFields() {
   const deleteMutation = useMutation({
     mutationFn: deleteCustomField,
     onSuccess: () => {
-      notifications.show({ color: "green", message: "Custom field deactivated" });
+      notifications.show({ color: "green", message: "Custom field removed successfully" });
       invalidate();
     },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
   });
 
   function openCreate() {

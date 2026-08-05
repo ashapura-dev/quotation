@@ -108,9 +108,18 @@ export async function deleteCustomField(id: number) {
     throw new HttpError(404, "Custom field not found.");
   }
 
-  // Soft delete / deactivate so historical quotation custom field values remain valid
-  return prisma.customField.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  // Check if this field is used in any quotation
+  const check: any[] = await prisma.$queryRawUnsafe(
+    `SELECT id FROM quotations WHERE JSON_EXTRACT(customFields, '$.${field.name}') IS NOT NULL AND JSON_EXTRACT(customFields, '$.${field.name}') != 'null' LIMIT 1`
+  );
+  const isUsed = check.length > 0;
+
+  if (isUsed) {
+    throw new HttpError(400, "Cannot delete custom field because it is used in one or more quotations.");
+  } else {
+    // Hard delete since it has never been used in any quotation
+    return prisma.customField.delete({
+      where: { id },
+    });
+  }
 }
