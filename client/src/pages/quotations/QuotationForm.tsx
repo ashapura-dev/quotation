@@ -222,7 +222,7 @@ export function QuotationForm() {
       <Stack gap="md">
         <Card withBorder padding="lg" radius="md">
           <Text fw={600} size="lg" mb="md">General Information</Text>
-          <Grid>
+          <Grid align="flex-end">
             <Grid.Col span={{ base: 12, md: 4 }}>
               <SegmentedControl
                 fullWidth
