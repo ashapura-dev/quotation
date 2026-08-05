@@ -29,7 +29,6 @@ import {
   type QuotationInput,
 } from "../../api/quotations";
 import { fetchRateTemplates, type RateComponent, type RateTemplate } from "../../api/rateTemplates";
-import { ContainerPicker } from "../../components/ContainerPicker";
 import { DynamicComponentBuilder } from "../../components/DynamicComponentBuilder";
 
 function templateComponentsToDraft(template: RateTemplate): RateComponent[] {
@@ -430,10 +429,6 @@ export function QuotationForm() {
               })}
             </Grid>
           </Card>
-        )}
-
-        {containerSizesQuery.data && (
-          <ContainerPicker containerSizes={containerSizesQuery.data} value={containers} onChange={setContainers} />
         )}
 
         <Card withBorder padding="lg" radius="md">
