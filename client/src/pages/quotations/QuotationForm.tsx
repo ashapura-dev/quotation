@@ -2,6 +2,7 @@ import {
   Autocomplete,
   Button,
   Card,
+  Grid,
   Group,
   Select,
   SegmentedControl,
@@ -219,108 +220,167 @@ export function QuotationForm() {
       </Title>
 
       <Stack gap="md">
-        <Card>
-          <Stack gap="sm">
-            <SegmentedControl
-              fullWidth
-              disabled={isEdit}
-              value={quotationType}
-              onChange={(v) => {
-                setQuotationType(v as "DPD" | "NON_DPD");
-                setRateTemplateId(null);
-                setComponents([]);
-                setBuilderKey((k) => k + 1);
-              }}
-              data={[
-                { label: "DPD (Loaded Delivery)", value: "DPD" },
-                { label: "Non-DPD", value: "NON_DPD" },
-              ]}
-            />
-            <TextInput
-              label="Quotation Title"
-              placeholder="e.g. July Shipment or Factory Cargo"
-              value={title}
-              onChange={(e) => setTitle(e.currentTarget.value)}
-            />
-            <Select
-              label="Rate template"
-              placeholder={`Select a ${quotationType === "DPD" ? "DPD" : "Non-DPD"} rate template`}
-              data={rateTemplatesQuery.data?.map((t) => ({ value: String(t.id), label: `${t.name} (v${t.version})` })) ?? []}
-              value={rateTemplateId ? String(rateTemplateId) : null}
-              onChange={(v) => applyRateTemplate(v ? Number(v) : null)}
-            />
-            <Group grow>
+        <Card withBorder padding="lg" radius="md">
+          <Text fw={600} size="lg" mb="md">General Information</Text>
+          <Grid>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <SegmentedControl
+                fullWidth
+                disabled={isEdit}
+                value={quotationType}
+                onChange={(v) => {
+                  setQuotationType(v as "DPD" | "NON_DPD");
+                  setRateTemplateId(null);
+                  setComponents([]);
+                  setBuilderKey((k) => k + 1);
+                }}
+                data={[
+                  { label: "DPD (Loaded Delivery)", value: "DPD" },
+                  { label: "Non-DPD", value: "NON_DPD" },
+                ]}
+              />
+            </Grid.Col>
+            
+            <Grid.Col span={{ base: 12, md: 8 }}>
+              <TextInput
+                label="Quotation Title"
+                placeholder="e.g. July Shipment or Factory Cargo"
+                value={title}
+                onChange={(e) => setTitle(e.currentTarget.value)}
+              />
+            </Grid.Col>
+
+            <Grid.Col span={12}>
+              <Select
+                label="Rate Template"
+                placeholder={`Select a ${quotationType === "DPD" ? "DPD" : "Non-DPD"} rate template`}
+                data={rateTemplatesQuery.data?.map((t) => ({ value: String(t.id), label: `${t.name} (v${t.version})` })) ?? []}
+                value={rateTemplateId ? String(rateTemplateId) : null}
+                onChange={(v) => applyRateTemplate(v ? Number(v) : null)}
+              />
+            </Grid.Col>
+          </Grid>
+        </Card>
+
+        <Card withBorder padding="lg" radius="md">
+          <Text fw={600} size="lg" mb="md">Shipment Details</Text>
+          <Grid>
+            <Grid.Col span={{ base: 12, md: 6 }}>
               <TextInput
                 label="Location"
                 placeholder="e.g. Nhava Sheva"
                 value={location}
                 onChange={(e) => setLocation(e.currentTarget.value)}
               />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
               <TextInput
                 label="Route"
                 placeholder="e.g. Nhava Sheva to Dharavi"
                 value={route}
                 onChange={(e) => setRoute(e.currentTarget.value)}
               />
-            </Group>
-            <Group grow>
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
               <TextInput
                 label="Services Offered"
                 placeholder="e.g. Origin Clearance"
                 value={servicesOffered}
                 onChange={(e) => setServicesOffered(e.currentTarget.value)}
               />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
               <TextInput
                 label="Commodity Type"
                 placeholder="e.g. General cargo"
                 value={commodityType}
                 onChange={(e) => setCommodityType(e.currentTarget.value)}
               />
-            </Group>
-            <TextInput
-              label="Container Details"
-              placeholder="e.g. 1 × 20ft Standard, 1 × 40ft Standard"
-              value={containerDetails}
-              onChange={(e) => setContainerDetails(e.currentTarget.value)}
-            />
-          </Stack>
+            </Grid.Col>
+
+            <Grid.Col span={12}>
+              <TextInput
+                label="Container Details"
+                placeholder="e.g. 1 × 20ft Standard, 1 × 40ft Standard"
+                value={containerDetails}
+                onChange={(e) => setContainerDetails(e.currentTarget.value)}
+              />
+            </Grid.Col>
+          </Grid>
         </Card>
 
-        <Card>
-          <Text fw={600} mb="sm">
-            Client details
-          </Text>
-          <Stack gap="sm">
-            <Autocomplete
-              label="Client name"
-              required
-              data={clientsQuery.data?.map((c) => c.name) ?? []}
-              value={clientName}
-              onChange={selectClient}
-            />
-            <Group grow>
-              <TextInput label="Contact person" value={clientContactPerson} onChange={(e) => setClientContactPerson(e.currentTarget.value)} />
-              <TextInput label="Phone" value={clientPhone} onChange={(e) => setClientPhone(e.currentTarget.value)} />
-            </Group>
-            <Group grow>
-              <TextInput label="Email" value={clientEmail} onChange={(e) => setClientEmail(e.currentTarget.value)} />
-              <TextInput label="GSTIN" value={clientGstin} onChange={(e) => setClientGstin(e.currentTarget.value)} />
-            </Group>
-            <Textarea label="Address" value={clientAddress} onChange={(e) => setClientAddress(e.currentTarget.value)} />
-          </Stack>
+        <Card withBorder padding="lg" radius="md">
+          <Text fw={600} size="lg" mb="md">Client Details</Text>
+          <Grid>
+            <Grid.Col span={{ base: 12, md: 8 }}>
+              <Autocomplete
+                label="Client Name"
+                required
+                data={clientsQuery.data?.map((c) => c.name) ?? []}
+                value={clientName}
+                onChange={selectClient}
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <TextInput 
+                label="GSTIN" 
+                placeholder="GST number"
+                value={clientGstin} 
+                onChange={(e) => setClientGstin(e.currentTarget.value)} 
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <TextInput 
+                label="Contact Person" 
+                placeholder="Name"
+                value={clientContactPerson} 
+                onChange={(e) => setClientContactPerson(e.currentTarget.value)} 
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <TextInput 
+                label="Phone" 
+                placeholder="Phone number"
+                value={clientPhone} 
+                onChange={(e) => setClientPhone(e.currentTarget.value)} 
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <TextInput 
+                label="Email" 
+                placeholder="Email address"
+                value={clientEmail} 
+                onChange={(e) => setClientEmail(e.currentTarget.value)} 
+              />
+            </Grid.Col>
+
+            <Grid.Col span={12}>
+              <Textarea 
+                label="Address" 
+                placeholder="Full address"
+                value={clientAddress} 
+                onChange={(e) => setClientAddress(e.currentTarget.value)} 
+              />
+            </Grid.Col>
+          </Grid>
         </Card>
 
         {customFieldsQuery.data && customFieldsQuery.data.filter(f => f.isActive).length > 0 && (
-          <Card>
-            <Text fw={600} mb="sm">
-              Additional Details
-            </Text>
-            <Stack gap="sm">
+          <Card withBorder padding="lg" radius="md">
+            <Text fw={600} size="lg" mb="md">Additional Details</Text>
+            <Grid>
               {customFieldsQuery.data.filter(f => f.isActive).map((field) => {
+                let element: React.ReactNode = null;
                 if (field.type === "TEXT") {
-                  return (
+                  element = (
                     <TextInput
-                      key={field.id}
                       label={field.label}
                       required={field.required}
                       placeholder={`Enter ${field.label.toLowerCase()}`}
@@ -328,11 +388,9 @@ export function QuotationForm() {
                       onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.value })}
                     />
                   );
-                }
-                if (field.type === "NUMBER") {
-                  return (
+                } else if (field.type === "NUMBER") {
+                  element = (
                     <TextInput
-                      key={field.id}
                       type="number"
                       label={field.label}
                       required={field.required}
@@ -341,23 +399,19 @@ export function QuotationForm() {
                       onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.value ? Number(e.currentTarget.value) : "" })}
                     />
                   );
-                }
-                if (field.type === "BOOLEAN") {
-                  return (
+                } else if (field.type === "BOOLEAN") {
+                  element = (
                     <Switch
-                      key={field.id}
                       label={field.label}
                       checked={Boolean(customFields[field.name])}
                       onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.checked })}
-                      mt="xs"
+                      mt="xl"
                     />
                   );
-                }
-                if (field.type === "SELECT") {
+                } else if (field.type === "SELECT") {
                   const opts = (field.options ?? "").split(",").map((o) => o.trim()).filter(Boolean);
-                  return (
+                  element = (
                     <Select
-                      key={field.id}
                       label={field.label}
                       required={field.required}
                       placeholder="Select an option"
@@ -367,9 +421,14 @@ export function QuotationForm() {
                     />
                   );
                 }
-                return null;
+                
+                return (
+                  <Grid.Col key={field.id} span={{ base: 12, md: field.type === "BOOLEAN" ? 4 : 6 }}>
+                    {element}
+                  </Grid.Col>
+                );
               })}
-            </Stack>
+            </Grid>
           </Card>
         )}
 
@@ -377,8 +436,8 @@ export function QuotationForm() {
           <ContainerPicker containerSizes={containerSizesQuery.data} value={containers} onChange={setContainers} />
         )}
 
-        <Card>
-          <Text fw={600} mb="sm">
+        <Card withBorder padding="lg" radius="md">
+          <Text fw={600} size="lg" mb="sm">
             Rate components
           </Text>
           <DynamicComponentBuilder
@@ -389,16 +448,29 @@ export function QuotationForm() {
           />
         </Card>
 
-        <Card>
-          <Select
-            label="PDF template"
-            placeholder="Use default"
-            clearable
-            data={pdfTemplatesQuery.data?.map((t) => ({ value: String(t.id), label: t.name })) ?? []}
-            value={pdfTemplateId ? String(pdfTemplateId) : null}
-            onChange={(v) => setPdfTemplateId(v ? Number(v) : null)}
-          />
-          <Textarea label="Additional Remarks" mt="sm" value={additionalRemarks} onChange={(e) => setAdditionalRemarks(e.currentTarget.value)} />
+        <Card withBorder padding="lg" radius="md">
+          <Text fw={600} size="lg" mb="md">Document Settings</Text>
+          <Grid>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <Select
+                label="PDF Template"
+                placeholder="Use default"
+                clearable
+                data={pdfTemplatesQuery.data?.map((t) => ({ value: String(t.id), label: t.name })) ?? []}
+                value={pdfTemplateId ? String(pdfTemplateId) : null}
+                onChange={(v) => setPdfTemplateId(v ? Number(v) : null)}
+              />
+            </Grid.Col>
+            
+            <Grid.Col span={12}>
+              <Textarea 
+                label="Additional Remarks" 
+                placeholder="Any comments, remarks, or specific conditions..."
+                value={additionalRemarks} 
+                onChange={(e) => setAdditionalRemarks(e.currentTarget.value)} 
+              />
+            </Grid.Col>
+          </Grid>
         </Card>
 
         <Group justify="flex-end" mt="md" gap="md">
