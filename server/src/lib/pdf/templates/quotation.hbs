@@ -252,12 +252,6 @@
       {{#if showType}}
         <div class="meta-item"><span class="meta-label">Type:</span> {{quotationType}}</div>
       {{/if}}
-      {{#if location}}
-        <div class="meta-item"><span class="meta-label">Location:</span> {{location}}</div>
-      {{/if}}
-      {{#if route}}
-        <div class="meta-item"><span class="meta-label">Route:</span> {{route}}</div>
-      {{/if}}
     </div>
   </div>
 
@@ -283,18 +277,26 @@
   <div class="grid" style="margin-top: -12px; margin-bottom: 22px;">
     <div class="card" style="padding: 10px 14px;">
       <div class="card-title" style="margin-bottom: 8px;">Shipment Details</div>
-      <div style="display: flex; gap: 24px; font-size: 11px;">
-        <div style="flex: 1;">
-          <strong style="color: #718096; font-size: 9px; text-transform: uppercase;">Container Details</strong>
-          <div style="margin-top: 3px; color: #334155; font-weight: 600; white-space: pre-wrap;">{{#if containerDetails}}{{containerDetails}}{{else}}-{{/if}}</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px 24px; font-size: 11px;">
+        <div style="min-width: 140px; flex: 1;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Container Details</strong>
+          <span style="color: #334155; font-weight: 600; white-space: pre-wrap;">{{#if containerDetails}}{{containerDetails}}{{else}}-{{/if}}</span>
         </div>
-        <div style="width: 180px;">
-          <strong style="color: #718096; font-size: 9px; text-transform: uppercase;">Services Offered</strong>
-          <div style="margin-top: 3px; color: #334155; font-weight: 600;">{{#if servicesOffered}}{{servicesOffered}}{{else}}-{{/if}}</div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Location</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if location}}{{location}}{{else}}-{{/if}}</span>
         </div>
-        <div style="width: 180px;">
-          <strong style="color: #718096; font-size: 9px; text-transform: uppercase;">Commodity Type</strong>
-          <div style="margin-top: 3px; color: #334155; font-weight: 600;">{{#if commodityType}}{{commodityType}}{{else}}-{{/if}}</div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Route</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if route}}{{route}}{{else}}-{{/if}}</span>
+        </div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Services Offered</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if servicesOffered}}{{servicesOffered}}{{else}}-{{/if}}</span>
+        </div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Commodity Type</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if commodityType}}{{commodityType}}{{else}}-{{/if}}</span>
         </div>
       </div>
     </div>
