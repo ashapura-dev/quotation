@@ -1,12 +1,10 @@
 import {
   ActionIcon,
-  Badge,
   Group,
   NumberInput,
   Paper,
   Select,
   Stack,
-  Switch,
   Table,
   Text,
   TextInput,
@@ -29,7 +27,6 @@ type Row = RateComponent & { _key: string };
 
 const TYPE_OPTIONS = [
   { value: "FIXED", label: "Fixed amount" },
-  { value: "PERCENTAGE", label: "Percentage of subtotal" },
   { value: "PER_CONTAINER", label: "Per container" },
   { value: "TEXT", label: "Text" },
 ];
@@ -179,17 +176,6 @@ function ComponentRow({
               min={0}
             />
           )}
-          {row.componentType === "PERCENTAGE" && (
-            <NumberInput
-              placeholder="Percent"
-              value={row.percentageValue ?? 0}
-              onChange={(value) => onUpdate({ percentageValue: Number(value) || 0 })}
-              w={120}
-              suffix="%"
-              decimalScale={2}
-              min={0}
-            />
-          )}
           {row.componentType === "TEXT" && (
             <TextInput
               placeholder="Text value"
@@ -203,12 +189,6 @@ function ComponentRow({
             value={row.remark ?? ""}
             onChange={(e) => onUpdate({ remark: e.currentTarget.value })}
             w={180}
-          />
-          <Switch
-            label="Tax"
-            checked={row.isTax}
-            onChange={(e) => onUpdate({ isTax: e.currentTarget.checked })}
-            disabled={row.componentType !== "PERCENTAGE"}
           />
           <ActionIcon color="red" variant="subtle" onClick={onRemove}>
             <IconTrash size={16} />
@@ -243,12 +223,6 @@ function ComponentRow({
               </Table.Tr>
             </Table.Tbody>
           </Table>
-        )}
-
-        {row.isTax && row.componentType === "PERCENTAGE" && (
-          <Badge size="xs" color="blue" w="fit-content">
-            Counted as tax in totals
-          </Badge>
         )}
       </Stack>
     </Paper>
