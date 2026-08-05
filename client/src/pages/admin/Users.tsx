@@ -18,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { createUser, fetchUsers, setUserActive, updateUser, type User } from "../../api/users";
 import type { Role } from "../../api/auth";
+import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
@@ -65,6 +66,20 @@ export function Users() {
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not update status", message: err.message }),
   });
 
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+
+  const passwordMutation = useMutation({
+    mutationFn: ({ id, password }: { id: number; password: string }) => updateUser(id, { password }),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Password updated successfully" });
+      setSelectedUserForPassword(null);
+      setNewPassword("");
+      invalidate();
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not change password", message: err.message }),
+  });
+
   const form = useForm({
     initialValues: { name: "", email: "", password: "", role: "EMPLOYEE" as Role },
     validate: zodResolver(createSchema),
@@ -84,6 +99,7 @@ export function Users() {
             <Table.Th>Email</Table.Th>
             <Table.Th>Role</Table.Th>
             <Table.Th>Status</Table.Th>
+            <Table.Th>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -110,6 +126,11 @@ export function Users() {
                   />
                 </Group>
               </Table.Td>
+              <Table.Td>
+                <Button size="xs" variant="light" onClick={() => setSelectedUserForPassword(u)}>
+                  Change Password
+                </Button>
+              </Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>
@@ -127,6 +148,37 @@ export function Users() {
             </Button>
           </Stack>
         </form>
+      </Modal>
+
+      <Modal
+        opened={selectedUserForPassword !== null}
+        onClose={() => {
+          setSelectedUserForPassword(null);
+          setNewPassword("");
+        }}
+        title={`Change Password for ${selectedUserForPassword?.name}`}
+      >
+        <Stack>
+          <PasswordInput
+            label="New password"
+            placeholder="At least 8 characters"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.currentTarget.value)}
+          />
+          <Button
+            onClick={() => {
+              if (newPassword.length < 8) {
+                notifications.show({ color: "red", message: "Password must be at least 8 characters" });
+                return;
+              }
+              passwordMutation.mutate({ id: selectedUserForPassword!.id, password: newPassword });
+            }}
+            loading={passwordMutation.isPending}
+            mt="sm"
+          >
+            Update password
+          </Button>
+        </Stack>
       </Modal>
     </div>
   );
