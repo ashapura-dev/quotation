@@ -56,6 +56,7 @@ const quotationSchema = z.object({
   customFields: z.record(z.any()).optional().nullable(),
   servicesOffered: z.string().optional().nullable(),
   commodityType: z.string().optional().nullable(),
+  containerDetails: z.string().optional().nullable(),
   additionalRemarks: z.string().optional().nullable(),
   notes: z.string().optional(),
   containers: z.array(containerSchema),

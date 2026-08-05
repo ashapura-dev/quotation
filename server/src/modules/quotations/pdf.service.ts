@@ -59,6 +59,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       customFields: customFieldsData,
       servicesOffered: quotation.servicesOffered,
       commodityType: quotation.commodityType,
+      containerDetails: quotation.containerDetails,
       additionalRemarks: quotation.additionalRemarks,
       preparedBy: quotation.createdBy?.name,
       status: quotation.status,

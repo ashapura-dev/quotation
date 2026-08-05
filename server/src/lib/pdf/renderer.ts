@@ -109,6 +109,7 @@ export interface QuotationPdfData {
   customFields?: Array<{ label: string; value: string }>;
   servicesOffered?: string | null;
   commodityType?: string | null;
+  containerDetails?: string | null;
   additionalRemarks?: string | null;
   preparedBy?: string | null;
   status: string;

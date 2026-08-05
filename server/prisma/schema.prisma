@@ -247,6 +247,7 @@ model Quotation {
   customFields           Json?
   servicesOffered        String?
   commodityType           String?
+  containerDetails       String?
   additionalRemarks      String?         @db.Text
 
 

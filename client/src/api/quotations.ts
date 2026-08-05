@@ -37,6 +37,7 @@ export interface Quotation {
   customFields: Record<string, any> | null;
   servicesOffered: string | null;
   commodityType: string | null;
+  containerDetails: string | null;
   additionalRemarks: string | null;
   notes: string | null;
   subtotal: number;
@@ -71,6 +72,7 @@ export interface QuotationInput {
   customFields?: Record<string, any>;
   servicesOffered?: string;
   commodityType?: string;
+  containerDetails?: string;
   additionalRemarks?: string;
   notes?: string;
   containers: QuotationContainer[];

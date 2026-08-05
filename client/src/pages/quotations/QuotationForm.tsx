@@ -61,6 +61,7 @@ export function QuotationForm() {
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
   const [servicesOffered, setServicesOffered] = useState("");
   const [commodityType, setCommodityType] = useState("");
+  const [containerDetails, setContainerDetails] = useState("");
   const [additionalRemarks, setAdditionalRemarks] = useState("");
 
   const customFieldsQuery = useQuery({ queryKey: ["custom-fields", false], queryFn: () => fetchCustomFields(false) });
@@ -99,6 +100,7 @@ export function QuotationForm() {
     setCustomFields(q.customFields ?? {});
     setServicesOffered(q.servicesOffered ?? "");
     setCommodityType(q.commodityType ?? "");
+    setContainerDetails(q.containerDetails ?? "");
     setAdditionalRemarks(q.additionalRemarks ?? "");
     setContainers(q.containers);
     setComponents(
@@ -200,6 +202,7 @@ export function QuotationForm() {
       customFields: customFields,
       servicesOffered: servicesOffered || undefined,
       commodityType: commodityType || undefined,
+      containerDetails: containerDetails || undefined,
       additionalRemarks: additionalRemarks || undefined,
       containers,
       components,
@@ -274,6 +277,12 @@ export function QuotationForm() {
                 onChange={(e) => setCommodityType(e.currentTarget.value)}
               />
             </Group>
+            <TextInput
+              label="Container Details"
+              placeholder="e.g. 1 × 20ft Standard, 1 × 40ft Standard"
+              value={containerDetails}
+              onChange={(e) => setContainerDetails(e.currentTarget.value)}
+            />
           </Stack>
         </Card>
 

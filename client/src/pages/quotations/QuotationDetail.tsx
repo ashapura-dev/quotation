@@ -248,17 +248,24 @@ export function QuotationDetail() {
               <Text size="sm" fw={600} mt={2}>{q.commodityType}</Text>
             </div>
           )}
-          {q.containers && q.containers.length > 0 && (
+          {q.containerDetails ? (
             <div>
-              <Text size="xs" c="dimmed" fw={500}>Containers</Text>
-              <Group gap={6} mt={4}>
-                {q.containers.map((c) => (
-                  <Badge key={c.containerSizeId} variant="outline" size="sm">
-                    {c.quantity} &times; {c.containerSizeLabel}
-                  </Badge>
-                ))}
-              </Group>
+              <Text size="xs" c="dimmed" fw={500}>Container Details</Text>
+              <Text size="sm" fw={600} mt={2}>{q.containerDetails}</Text>
             </div>
+          ) : (
+            q.containers && q.containers.length > 0 && (
+              <div>
+                <Text size="xs" c="dimmed" fw={500}>Containers</Text>
+                <Group gap={6} mt={4}>
+                  {q.containers.map((c) => (
+                    <Badge key={c.containerSizeId} variant="outline" size="sm">
+                      {c.quantity} &times; {c.containerSizeLabel}
+                    </Badge>
+                  ))}
+                </Group>
+              </div>
+            )
           )}
         </Group>
         {q.additionalRemarks && (
