@@ -258,6 +258,9 @@
       {{#if route}}
         <div class="meta-item"><span class="meta-label">Route:</span> {{route}}</div>
       {{/if}}
+      {{#each customFields}}
+        <div class="meta-item"><span class="meta-label">{{this.label}}:</span> {{this.value}}</div>
+      {{/each}}
     </div>
   </div>
 

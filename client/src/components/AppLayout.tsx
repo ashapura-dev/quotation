@@ -62,6 +62,7 @@ export function AppLayout() {
           <NavLink component={RouterNavLink} to="/admin/container-sizes" label="Container Sizes" leftSection={<IconBoxSeam size={18} />} />
           <NavLink component={RouterNavLink} to="/admin/rate-templates" label="Rate Templates" leftSection={<IconTags size={18} />} />
           <NavLink component={RouterNavLink} to="/admin/pdf-templates" label="PDF Templates" leftSection={<IconFileText size={18} />} />
+          <NavLink component={RouterNavLink} to="/admin/custom-fields" label="Custom Fields" leftSection={<IconSettings size={18} />} />
           <NavLink component={RouterNavLink} to="/admin/settings" label="Admin Settings" leftSection={<IconSettings size={18} />} />
         </RoleGate>
       </AppShell.Navbar>

@@ -106,6 +106,7 @@ export interface QuotationPdfData {
   route?: string | null;
   location?: string | null;
   title?: string | null;
+  customFields?: Array<{ label: string; value: string }>;
   status: string;
   createdAt: string | Date;
   clientName: string;

@@ -13,6 +13,7 @@ const Clients = lazy(() => import("./pages/admin/Clients").then((m) => ({ defaul
 const RateTemplates = lazy(() => import("./pages/admin/RateTemplates").then((m) => ({ default: m.RateTemplates })));
 const PdfTemplates = lazy(() => import("./pages/admin/PdfTemplates").then((m) => ({ default: m.PdfTemplates })));
 const Settings = lazy(() => import("./pages/admin/Settings").then((m) => ({ default: m.Settings })));
+const CustomFields = lazy(() => import("./pages/admin/CustomFields").then((m) => ({ default: m.CustomFields })));
 const QuotationList = lazy(() => import("./pages/quotations/QuotationList").then((m) => ({ default: m.QuotationList })));
 const QuotationForm = lazy(() => import("./pages/quotations/QuotationForm").then((m) => ({ default: m.QuotationForm })));
 const QuotationDetail = lazy(() => import("./pages/quotations/QuotationDetail").then((m) => ({ default: m.QuotationDetail })));
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
               { path: "/admin/rate-templates", element: withSuspense(<RateTemplates />) },
               { path: "/admin/pdf-templates", element: withSuspense(<PdfTemplates />) },
               { path: "/admin/clients", element: withSuspense(<Clients />) },
+              { path: "/admin/custom-fields", element: withSuspense(<CustomFields />) },
               { path: "/admin/settings", element: withSuspense(<Settings />) },
             ],
           },

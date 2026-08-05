@@ -19,6 +19,7 @@ import {
 } from "../../api/quotations";
 import { fetchPdfTemplates } from "../../api/pdfTemplates";
 import { useAuth } from "../../hooks/useAuth";
+import { fetchCustomFields } from "../../api/customFields";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -47,6 +48,7 @@ export function QuotationDetail() {
   const query = useQuery({ queryKey: ["quotation", id], queryFn: () => fetchQuotation(Number(id)) });
   const historyQuery = useQuery({ queryKey: ["quotation-history", id], queryFn: () => fetchStatusHistory(Number(id)) });
   const pdfTemplatesQuery = useQuery({ queryKey: ["pdf-templates", false], queryFn: () => fetchPdfTemplates(false) });
+  const customFieldsQuery = useQuery({ queryKey: ["custom-fields", true], queryFn: () => fetchCustomFields(true) });
 
   function invalidateAll() {
     queryClient.invalidateQueries({ queryKey: ["quotation", id] });
@@ -228,6 +230,50 @@ export function QuotationDetail() {
           {q.clientGstin && <Text size="sm">GSTIN: {q.clientGstin}</Text>}
         </Group>
       </Card>
+
+      {customFieldsQuery.data && (
+        (() => {
+          const displayedFields = customFieldsQuery.data
+            .map((f) => {
+              const val = q.customFields?.[f.name];
+              let displayVal = "";
+              if (val !== undefined && val !== null && val !== "") {
+                if (f.type === "BOOLEAN") {
+                  displayVal = val ? "Yes" : "No";
+                } else {
+                  displayVal = String(val);
+                }
+              }
+              return {
+                label: f.label,
+                value: displayVal,
+              };
+            })
+            .filter((f) => f.value);
+
+          if (displayedFields.length === 0) return null;
+
+          return (
+            <Card mb="md">
+              <Text fw={600} mb="sm">
+                Additional Information
+              </Text>
+              <Group gap="xl">
+                {displayedFields.map((f, i) => (
+                  <div key={i}>
+                    <Text size="xs" c="dimmed" fw={500}>
+                      {f.label}
+                    </Text>
+                    <Text size="sm" fw={600} mt={2}>
+                      {f.value}
+                    </Text>
+                  </div>
+                ))}
+              </Group>
+            </Card>
+          );
+        })()
+      )}
 
 
       <Card mb="md">

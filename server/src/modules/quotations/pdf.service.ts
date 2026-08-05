@@ -27,6 +27,26 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
   const quotation = await getQuotation(quotationId);
   const template = await resolvePdfTemplate(quotation.pdfTemplateId, quotation.quotationType, requestedTemplateId);
 
+  const allFields = await prisma.customField.findMany();
+  const customFieldsData = allFields
+    .map((f) => {
+      const val = (quotation.customFields as any)?.[f.name];
+      let valueStr = "-";
+      if (val !== undefined && val !== null) {
+        if (f.type === "BOOLEAN") {
+          valueStr = val ? "Yes" : "No";
+        } else {
+          valueStr = String(val);
+        }
+      }
+      return {
+        label: f.label,
+        value: valueStr,
+        hasValue: val !== undefined && val !== null && val !== "",
+      };
+    })
+    .filter((f) => f.hasValue);
+
   const pdfBuffer = await renderQuotationPdf(
     {
       quotationNumber: quotation.quotationNumber,
@@ -36,6 +56,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       route: quotation.route,
       location: quotation.location,
       title: quotation.title,
+      customFields: customFieldsData,
       status: quotation.status,
       createdAt: quotation.createdAt,
       clientName: quotation.clientName,

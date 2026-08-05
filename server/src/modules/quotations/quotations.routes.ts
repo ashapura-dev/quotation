@@ -53,8 +53,7 @@ const quotationSchema = z.object({
   location: z.string().optional().nullable(),
   route: z.string().optional().nullable(),
   title: z.string().optional().nullable(),
-
-
+  customFields: z.record(z.any()).optional().nullable(),
   notes: z.string().optional(),
   containers: z.array(containerSchema),
   components: z.array(componentSchema),

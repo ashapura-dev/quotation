@@ -6,11 +6,13 @@ import {
   Select,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
   Textarea,
   TextInput,
   Title,
 } from "@mantine/core";
+import { fetchCustomFields } from "../../api/customFields";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -57,6 +59,9 @@ export function QuotationForm() {
   const [containers, setContainers] = useState<QuotationContainer[]>([]);
   const [components, setComponents] = useState<RateComponent[]>([]);
   const [builderKey, setBuilderKey] = useState(0);
+  const [customFields, setCustomFields] = useState<Record<string, any>>({});
+
+  const customFieldsQuery = useQuery({ queryKey: ["custom-fields", false], queryFn: () => fetchCustomFields(false) });
 
   const containerSizesQuery = useQuery({ queryKey: ["container-sizes", false], queryFn: () => fetchContainerSizes(false) });
   const pdfTemplatesQuery = useQuery({ queryKey: ["pdf-templates", false], queryFn: () => fetchPdfTemplates(false) });
@@ -90,6 +95,7 @@ export function QuotationForm() {
     setRoute(q.route ?? "");
     setTitle(q.title ?? "");
     setNotes(q.notes ?? "");
+    setCustomFields(q.customFields ?? {});
     setContainers(q.containers);
     setComponents(
       q.lineItems.map((li) => ({
@@ -160,6 +166,19 @@ export function QuotationForm() {
       notifications.show({ color: "red", message: "Add at least one rate component" });
       return;
     }
+
+    // Validate required custom fields
+    const activeCustomFields = customFieldsQuery.data?.filter(f => f.isActive) ?? [];
+    for (const field of activeCustomFields) {
+      if (field.required) {
+        const val = customFields[field.name];
+        if (val === undefined || val === null || (typeof val === "string" && !val.trim())) {
+          notifications.show({ color: "red", message: `${field.label} is required` });
+          return;
+        }
+      }
+    }
+
     const input: QuotationInput = {
       quotationType,
       clientId,
@@ -174,6 +193,7 @@ export function QuotationForm() {
       location: location || undefined,
       route: route || undefined,
       title: title || undefined,
+      customFields: customFields,
       notes: notes || undefined,
       containers,
       components,
@@ -260,6 +280,69 @@ export function QuotationForm() {
             <Textarea label="Address" value={clientAddress} onChange={(e) => setClientAddress(e.currentTarget.value)} />
           </Stack>
         </Card>
+
+        {customFieldsQuery.data && customFieldsQuery.data.filter(f => f.isActive).length > 0 && (
+          <Card>
+            <Text fw={600} mb="sm">
+              Additional Details
+            </Text>
+            <Stack gap="sm">
+              {customFieldsQuery.data.filter(f => f.isActive).map((field) => {
+                if (field.type === "TEXT") {
+                  return (
+                    <TextInput
+                      key={field.id}
+                      label={field.label}
+                      required={field.required}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      value={customFields[field.name] ?? ""}
+                      onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.value })}
+                    />
+                  );
+                }
+                if (field.type === "NUMBER") {
+                  return (
+                    <TextInput
+                      key={field.id}
+                      type="number"
+                      label={field.label}
+                      required={field.required}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      value={customFields[field.name] ?? ""}
+                      onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.value ? Number(e.currentTarget.value) : "" })}
+                    />
+                  );
+                }
+                if (field.type === "BOOLEAN") {
+                  return (
+                    <Switch
+                      key={field.id}
+                      label={field.label}
+                      checked={Boolean(customFields[field.name])}
+                      onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.checked })}
+                      mt="xs"
+                    />
+                  );
+                }
+                if (field.type === "SELECT") {
+                  const opts = (field.options ?? "").split(",").map((o) => o.trim()).filter(Boolean);
+                  return (
+                    <Select
+                      key={field.id}
+                      label={field.label}
+                      required={field.required}
+                      placeholder="Select an option"
+                      data={opts}
+                      value={customFields[field.name] ?? null}
+                      onChange={(val) => setCustomFields({ ...customFields, [field.name]: val })}
+                    />
+                  );
+                }
+                return null;
+              })}
+            </Stack>
+          </Card>
+        )}
 
         {containerSizesQuery.data && (
           <ContainerPicker containerSizes={containerSizesQuery.data} value={containers} onChange={setContainers} />
