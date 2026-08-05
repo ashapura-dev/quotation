@@ -151,15 +151,12 @@ export function QuotationDetail() {
     <div>
       <Group justify="space-between" mb="md">
         <div>
-          <Title order={2}>{q.quotationNumber}</Title>
-          <Text fw={700} size="md" c="blue" mt={2}>
-            {q.quotationType === "NON_DPD" ? "IMPORT CLEARANCE FOR NON-DPD CARGO" : "IMPORT CLEARANCE FOR DPD CARGO"}
-            {q.location ? ` - ${q.location.toUpperCase()}` : ""}
-          </Text>
+          <Title order={2}>{q.title || q.quotationNumber}</Title>
+          {q.title && <Text c="dimmed" size="sm" mt={2}>{q.quotationNumber}</Text>}
           <Group gap="xs" mt={6}>
             <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
             <Text size="sm" c="dimmed">
-              {q.quotationType !== "NON_DPD" ? `${q.quotationType} · ` : ""}created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
+              {q.quotationType} {q.location ? `· ${q.location}` : ""} {q.route ? `· ${q.route}` : ""} · created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
             </Text>
           </Group>
         </div>

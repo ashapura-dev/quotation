@@ -35,6 +35,8 @@ export interface QuotationInput {
   rateTemplateId?: number | null;
   pdfTemplateId?: number | null;
   location?: string | null;
+  route?: string | null;
+  title?: string | null;
   notes?: string;
   containers: QuotationContainerInput[];
   components: QuotationComponentInput[];
@@ -129,6 +131,8 @@ export async function createQuotation(createdById: number, input: QuotationInput
       rateTemplateId: input.rateTemplateId ?? null,
       pdfTemplateId: input.pdfTemplateId ?? null,
       location,
+      route: input.route ?? null,
+      title: input.title ?? null,
       notes: input.notes,
       subtotal: totals.subtotal,
       taxTotal: totals.taxTotal,
@@ -219,6 +223,8 @@ export async function updateQuotation(id: number, userId: number, role: string, 
         rateTemplateId: input.rateTemplateId ?? null,
         pdfTemplateId: input.pdfTemplateId ?? null,
         location,
+        route: input.route ?? null,
+        title: input.title ?? null,
         notes: input.notes,
         subtotal: totals.subtotal,
         taxTotal: totals.taxTotal,
@@ -304,6 +310,9 @@ export async function duplicateQuotation(sourceId: number, createdById: number) 
       clientEmail: source.clientEmail,
       rateTemplateId: source.rateTemplateId,
       pdfTemplateId: source.pdfTemplateId,
+      location: source.location,
+      route: source.route,
+      title: source.title,
       notes: source.notes,
       subtotal: source.subtotal,
       taxTotal: source.taxTotal,

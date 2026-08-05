@@ -51,6 +51,10 @@ const quotationSchema = z.object({
   rateTemplateId: z.number().nullable().optional(),
   pdfTemplateId: z.number().nullable().optional(),
   location: z.string().optional().nullable(),
+  route: z.string().optional().nullable(),
+  title: z.string().optional().nullable(),
+
+
   notes: z.string().optional(),
   containers: z.array(containerSchema),
   components: z.array(componentSchema),

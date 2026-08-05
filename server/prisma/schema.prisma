@@ -242,6 +242,10 @@ model Quotation {
   pdfTemplateId          Int?
   pdfTemplate            PdfTemplate?    @relation(fields: [pdfTemplateId], references: [id])
   location               String?
+  route                  String?
+  title                  String?
+
+
 
   subtotal               Decimal         @db.Decimal(12, 2)
   taxTotal               Decimal         @db.Decimal(12, 2)

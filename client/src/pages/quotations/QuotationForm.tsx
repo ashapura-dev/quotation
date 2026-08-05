@@ -51,6 +51,8 @@ export function QuotationForm() {
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [location, setLocation] = useState("");
+  const [route, setRoute] = useState("");
+  const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [containers, setContainers] = useState<QuotationContainer[]>([]);
   const [components, setComponents] = useState<RateComponent[]>([]);
@@ -85,6 +87,8 @@ export function QuotationForm() {
     setClientPhone(q.clientPhone ?? "");
     setClientEmail(q.clientEmail ?? "");
     setLocation(q.location ?? "");
+    setRoute(q.route ?? "");
+    setTitle(q.title ?? "");
     setNotes(q.notes ?? "");
     setContainers(q.containers);
     setComponents(
@@ -168,6 +172,8 @@ export function QuotationForm() {
       rateTemplateId,
       pdfTemplateId,
       location: location || undefined,
+      route: route || undefined,
+      title: title || undefined,
       notes: notes || undefined,
       containers,
       components,
@@ -201,6 +207,12 @@ export function QuotationForm() {
                 { label: "Non-DPD", value: "NON_DPD" },
               ]}
             />
+            <TextInput
+              label="Quotation Title"
+              placeholder="e.g. July Shipment or Factory Cargo"
+              value={title}
+              onChange={(e) => setTitle(e.currentTarget.value)}
+            />
             <Select
               label="Rate template"
               placeholder={`Select a ${quotationType === "DPD" ? "DPD" : "Non-DPD"} rate template`}
@@ -208,12 +220,20 @@ export function QuotationForm() {
               value={rateTemplateId ? String(rateTemplateId) : null}
               onChange={(v) => applyRateTemplate(v ? Number(v) : null)}
             />
-            <TextInput
-              label="Location"
-              placeholder="e.g. Nhava Sheva"
-              value={location}
-              onChange={(e) => setLocation(e.currentTarget.value)}
-            />
+            <Group grow>
+              <TextInput
+                label="Location"
+                placeholder="e.g. Nhava Sheva"
+                value={location}
+                onChange={(e) => setLocation(e.currentTarget.value)}
+              />
+              <TextInput
+                label="Route"
+                placeholder="e.g. Nhava Sheva to Dharavi"
+                value={route}
+                onChange={(e) => setRoute(e.currentTarget.value)}
+              />
+            </Group>
           </Stack>
         </Card>
 

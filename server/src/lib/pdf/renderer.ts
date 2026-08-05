@@ -103,6 +103,9 @@ export interface QuotationPdfData {
   quotationType: string;
   showType?: boolean;
   heading?: string;
+  route?: string | null;
+  location?: string | null;
+  title?: string | null;
   status: string;
   createdAt: string | Date;
   clientName: string;
