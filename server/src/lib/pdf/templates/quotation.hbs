@@ -280,7 +280,11 @@
       <div style="display: flex; flex-wrap: wrap; gap: 16px 24px; font-size: 11px;">
         <div style="min-width: 140px; flex: 1;">
           <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Container Details</strong>
-          <span style="color: #334155; font-weight: 600; white-space: pre-wrap;">{{#if containerDetails}}{{containerDetails}}{{else}}-{{/if}}</span>
+          <div style="margin-top: 3px; color: #334155; font-weight: 600; line-height: 1.4;">
+            {{#each containers}}
+              <div>{{this.quantity}} &times; {{this.containerSizeLabel}}</div>
+            {{/each}}
+          </div>
         </div>
         <div style="min-width: 140px;">
           <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Location</strong>

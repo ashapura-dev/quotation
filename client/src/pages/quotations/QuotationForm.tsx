@@ -29,6 +29,7 @@ import {
   type QuotationInput,
 } from "../../api/quotations";
 import { fetchRateTemplates, type RateComponent, type RateTemplate } from "../../api/rateTemplates";
+import { ContainerPicker } from "../../components/ContainerPicker";
 import { DynamicComponentBuilder } from "../../components/DynamicComponentBuilder";
 
 function templateComponentsToDraft(template: RateTemplate): RateComponent[] {
@@ -61,7 +62,6 @@ export function QuotationForm() {
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
   const [servicesOffered, setServicesOffered] = useState("");
   const [commodityType, setCommodityType] = useState("");
-  const [containerDetails, setContainerDetails] = useState("");
   const [additionalRemarks, setAdditionalRemarks] = useState("");
 
   const customFieldsQuery = useQuery({ queryKey: ["custom-fields", false], queryFn: () => fetchCustomFields(false) });
@@ -100,7 +100,6 @@ export function QuotationForm() {
     setCustomFields(q.customFields ?? {});
     setServicesOffered(q.servicesOffered ?? "");
     setCommodityType(q.commodityType ?? "");
-    setContainerDetails(q.containerDetails ?? "");
     setAdditionalRemarks(q.additionalRemarks ?? "");
     setContainers(q.containers);
     setComponents(
@@ -202,7 +201,6 @@ export function QuotationForm() {
       customFields: customFields,
       servicesOffered: servicesOffered || undefined,
       commodityType: commodityType || undefined,
-      containerDetails: containerDetails || undefined,
       additionalRemarks: additionalRemarks || undefined,
       containers,
       components,
@@ -297,15 +295,6 @@ export function QuotationForm() {
                 placeholder="e.g. General cargo"
                 value={commodityType}
                 onChange={(e) => setCommodityType(e.currentTarget.value)}
-              />
-            </Grid.Col>
-
-            <Grid.Col span={12}>
-              <TextInput
-                label="Container Details"
-                placeholder="e.g. 1 × 20ft Standard, 1 × 40ft Standard"
-                value={containerDetails}
-                onChange={(e) => setContainerDetails(e.currentTarget.value)}
               />
             </Grid.Col>
           </Grid>
@@ -429,6 +418,10 @@ export function QuotationForm() {
               })}
             </Grid>
           </Card>
+        )}
+
+        {containerSizesQuery.data && (
+          <ContainerPicker containerSizes={containerSizesQuery.data} value={containers} onChange={setContainers} />
         )}
 
         <Card withBorder padding="lg" radius="md">
