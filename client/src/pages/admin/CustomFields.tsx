@@ -72,6 +72,14 @@ export function CustomFields() {
     onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
   });
 
+  // Inline toggle — saves a single boolean flag without opening the modal
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, patch }: { id: number; patch: Partial<{ showInFilter: boolean; showInExport: boolean; showInList: boolean; showInPdf: boolean; required: boolean; isActive: boolean }> }) =>
+      updateCustomField(id, patch),
+    onSuccess: () => invalidate(),
+    onError: (err: Error) => notifications.show({ color: "red", title: "Update failed", message: err.message }),
+  });
+
   function openCreate() {
     setEditing(null);
     form.setValues({
@@ -138,10 +146,8 @@ export function CustomFields() {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Label</Table.Th>
-            <Table.Th>Name (Key)</Table.Th>
             <Table.Th>Type</Table.Th>
             <Table.Th>Required</Table.Th>
-            <Table.Th>Options</Table.Th>
             <Table.Th>Show in PDF</Table.Th>
             <Table.Th>Show in List</Table.Th>
             <Table.Th>Show in Filter</Table.Th>
@@ -153,7 +159,7 @@ export function CustomFields() {
         <Table.Tbody>
           {query.isPending ? (
             <Table.Tr>
-              <Table.Td colSpan={11} style={{ height: "200px" }}>
+              <Table.Td colSpan={9} style={{ height: "200px" }}>
                 <Group justify="center" align="center" style={{ height: "100%" }}>
                   <Loader size="md" />
                 </Group>
@@ -170,15 +176,62 @@ export function CustomFields() {
                     )}
                   </Group>
                 </Table.Td>
-                <Table.Td style={{ fontFamily: "monospace", fontSize: "12px" }}>{field.name}</Table.Td>
                 <Table.Td>{field.isDefault ? "System Text" : field.type}</Table.Td>
-                <Table.Td>{field.isDefault ? "No" : (field.required ? "Yes" : "No")}</Table.Td>
-                <Table.Td>{field.type === "SELECT" ? field.options || "-" : "-"}</Table.Td>
-                <Table.Td>{field.showInPdf ? "Yes" : "No"}</Table.Td>
-                <Table.Td>{field.showInList ? "Yes" : "No"}</Table.Td>
-                <Table.Td>{field.showInFilter ? "Yes" : "No"}</Table.Td>
-                <Table.Td>{field.showInExport ? "Yes" : "No"}</Table.Td>
-                <Table.Td>{field.isActive ? "Active" : "Inactive"}</Table.Td>
+                {/* Required — editable for custom fields, disabled for system fields */}
+                <Table.Td>
+                  <Switch
+                    size="xs"
+                    checked={field.isDefault ? false : field.required}
+                    disabled={field.isDefault}
+                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { required: e.currentTarget.checked } })}
+                  />
+                </Table.Td>
+                {/* Show in PDF — only editable for non-default fields */}
+                <Table.Td>
+                  {field.isDefault ? (
+                    <Text size="xs" c="dimmed">—</Text>
+                  ) : (
+                    <Switch
+                      size="xs"
+                      checked={field.showInPdf}
+                      onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInPdf: e.currentTarget.checked } })}
+                    />
+                  )}
+                </Table.Td>
+                {/* Show in List */}
+                <Table.Td>
+                  <Switch
+                    size="xs"
+                    checked={field.showInList}
+                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInList: e.currentTarget.checked } })}
+                  />
+                </Table.Td>
+                {/* Show in Filter */}
+                <Table.Td>
+                  <Switch
+                    size="xs"
+                    checked={field.showInFilter}
+                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInFilter: e.currentTarget.checked } })}
+                  />
+                </Table.Td>
+                {/* Show in Export */}
+                <Table.Td>
+                  <Switch
+                    size="xs"
+                    checked={field.showInExport}
+                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInExport: e.currentTarget.checked } })}
+                  />
+                </Table.Td>
+                {/* Status (isActive) — editable for custom fields, disabled for system fields */}
+                <Table.Td>
+                  <Switch
+                    size="xs"
+                    checked={field.isActive}
+                    disabled={field.isDefault}
+                    color="green"
+                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { isActive: e.currentTarget.checked } })}
+                  />
+                </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
                     <ActionIcon variant="subtle" onClick={() => openEdit(field)}>
@@ -283,12 +336,14 @@ export function CustomFields() {
               />
             )}
 
-            <Switch
-              label="Show in PDF Template"
-              checked={form.values.showInPdf}
-              onChange={(event) => form.setFieldValue("showInPdf", event.currentTarget.checked)}
-              mt="xs"
-            />
+            {!form.values.isDefault && (
+              <Switch
+                label="Show in PDF Template"
+                checked={form.values.showInPdf}
+                onChange={(event) => form.setFieldValue("showInPdf", event.currentTarget.checked)}
+                mt="xs"
+              />
+            )}
 
             <Switch
               label="Show in Filter Panel"
