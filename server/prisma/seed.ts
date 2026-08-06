@@ -205,7 +205,8 @@ Payment terms – Third party complete advance // rest within 15 days from the b
     },
   });
 
-  const defaultFields = [
+  const defaultFields: Array<{ name: string; label: string; required?: boolean }> = [
+    { name: "clientName", label: "Client Name", required: true },
     { name: "location", label: "Location" },
     { name: "route", label: "Route" },
     { name: "title", label: "Title" },
@@ -226,12 +227,13 @@ Payment terms – Third party complete advance // rest within 15 days from the b
       where: { name: field.name },
       update: {
         isDefault: true,
+        required: field.required ?? false,
       },
       create: {
         name: field.name,
         label: field.label,
         type: "TEXT",
-        required: false,
+        required: field.required ?? false,
         isDefault: true,
         isActive: true,
         showInPdf: true,

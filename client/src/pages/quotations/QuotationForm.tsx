@@ -13,7 +13,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { fetchCustomFields } from "../../api/customFields";
+import { fetchCustomFields, type CustomField } from "../../api/customFields";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -37,6 +37,8 @@ function templateComponentsToDraft(template: RateTemplate): RateComponent[] {
     .filter((c) => c.isActive !== false)
     .map((c) => ({ ...c, sourceTemplateComponentId: c.id } as RateComponent & { sourceTemplateComponentId: number }));
 }
+
+const CLIENT_FIELD_NAMES = new Set(["clientName", "clientAddress", "clientGstin", "clientContactPerson", "clientPhone", "clientEmail"]);
 
 export function QuotationForm() {
   const { id } = useParams();
@@ -62,7 +64,26 @@ export function QuotationForm() {
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
   const [servicesOffered, setServicesOffered] = useState("");
   const [commodityType, setCommodityType] = useState("");
+  const [containerDetails, setContainerDetails] = useState("");
   const [additionalRemarks, setAdditionalRemarks] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const systemFieldBindings: Record<string, { value: string; setValue: (value: string) => void }> = {
+    clientName: { value: clientName, setValue: selectClient },
+    location: { value: location, setValue: setLocation },
+    route: { value: route, setValue: setRoute },
+    title: { value: title, setValue: setTitle },
+    servicesOffered: { value: servicesOffered, setValue: setServicesOffered },
+    commodityType: { value: commodityType, setValue: setCommodityType },
+    containerDetails: { value: containerDetails, setValue: setContainerDetails },
+    additionalRemarks: { value: additionalRemarks, setValue: setAdditionalRemarks },
+    notes: { value: notes, setValue: setNotes },
+    clientAddress: { value: clientAddress, setValue: setClientAddress },
+    clientGstin: { value: clientGstin, setValue: setClientGstin },
+    clientContactPerson: { value: clientContactPerson, setValue: setClientContactPerson },
+    clientPhone: { value: clientPhone, setValue: setClientPhone },
+    clientEmail: { value: clientEmail, setValue: setClientEmail },
+  };
 
   const customFieldsQuery = useQuery({ queryKey: ["custom-fields", false], queryFn: () => fetchCustomFields(false) });
 
@@ -100,7 +121,9 @@ export function QuotationForm() {
     setCustomFields(q.customFields ?? {});
     setServicesOffered(q.servicesOffered ?? "");
     setCommodityType(q.commodityType ?? "");
+    setContainerDetails(q.containerDetails ?? "");
     setAdditionalRemarks(q.additionalRemarks ?? "");
+    setNotes(q.notes ?? "");
     setContainers(q.containers);
     setComponents(
       q.lineItems.map((li) => ({
@@ -176,7 +199,7 @@ export function QuotationForm() {
     const activeCustomFields = customFieldsQuery.data?.filter(f => f.isActive) ?? [];
     for (const field of activeCustomFields) {
       if (field.required) {
-        const val = customFields[field.name];
+        const val = field.isDefault ? systemFieldBindings[field.name]?.value : customFields[field.name];
         if (val === undefined || val === null || (typeof val === "string" && !val.trim())) {
           notifications.show({ color: "red", message: `${field.label} is required` });
           return;
@@ -201,11 +224,53 @@ export function QuotationForm() {
       customFields: customFields,
       servicesOffered: servicesOffered || undefined,
       commodityType: commodityType || undefined,
+      containerDetails: containerDetails || undefined,
       additionalRemarks: additionalRemarks || undefined,
+      notes: notes || undefined,
       containers,
       components,
     };
     saveMutation.mutate(input);
+  }
+
+  function renderField(field: CustomField) {
+    const systemBinding = field.isDefault ? systemFieldBindings[field.name] : undefined;
+    if (field.isDefault && !systemBinding) return null;
+    let element: React.ReactNode = null;
+
+    if (field.name === "clientName") {
+      element = (
+        <Autocomplete
+          label={field.label}
+          required={field.required}
+          placeholder="Select or enter a client"
+          data={clientsQuery.data?.map((client) => client.name) ?? []}
+          value={clientName}
+          onChange={selectClient}
+        />
+      );
+    } else if (field.type === "TEXT") {
+      const isMultiline = ["clientAddress", "containerDetails", "additionalRemarks", "notes"].includes(field.name);
+      const props = {
+        label: field.label,
+        required: field.required,
+        placeholder: `Enter ${field.label.toLowerCase()}`,
+        value: systemBinding?.value ?? customFields[field.name] ?? "",
+        onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => systemBinding
+          ? systemBinding.setValue(event.currentTarget.value)
+          : setCustomFields({ ...customFields, [field.name]: event.currentTarget.value }),
+      };
+      element = isMultiline ? <Textarea {...props} minRows={2} /> : <TextInput {...props} />;
+    } else if (field.type === "NUMBER") {
+      element = <TextInput type="number" label={field.label} required={field.required} placeholder={`Enter ${field.label.toLowerCase()}`} value={customFields[field.name] ?? ""} onChange={(event) => setCustomFields({ ...customFields, [field.name]: event.currentTarget.value ? Number(event.currentTarget.value) : "" })} />;
+    } else if (field.type === "BOOLEAN") {
+      element = <Switch label={field.label} checked={Boolean(customFields[field.name])} onChange={(event) => setCustomFields({ ...customFields, [field.name]: event.currentTarget.checked })} mt="xl" />;
+    } else if (field.type === "SELECT") {
+      const options = (field.options ?? "").split(",").map((option) => option.trim()).filter(Boolean);
+      element = <Select label={field.label} required={field.required} placeholder="Select an option" data={options} value={customFields[field.name] ?? null} onChange={(value) => setCustomFields({ ...customFields, [field.name]: value })} />;
+    }
+
+    return <Grid.Col key={field.id} span={{ base: 12, md: field.type === "BOOLEAN" ? 4 : 6 }}>{element}</Grid.Col>;
   }
 
   if (isEdit && quotationQuery.isLoading) return <Text>Loading...</Text>;
@@ -238,15 +303,6 @@ export function QuotationForm() {
               />
             </Grid.Col>
             
-            <Grid.Col span={{ base: 12, md: 8 }}>
-              <TextInput
-                label="Quotation Title"
-                placeholder="e.g. July Shipment or Factory Cargo"
-                value={title}
-                onChange={(e) => setTitle(e.currentTarget.value)}
-              />
-            </Grid.Col>
-
             <Grid.Col span={12}>
               <Select
                 label="Rate Template"
@@ -260,162 +316,22 @@ export function QuotationForm() {
         </Card>
 
         <Card withBorder padding="lg" radius="md">
-          <Text fw={600} size="lg" mb="md">Shipment Details</Text>
-          <Grid>
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput
-                label="Location"
-                placeholder="e.g. Nhava Sheva"
-                value={location}
-                onChange={(e) => setLocation(e.currentTarget.value)}
-              />
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput
-                label="Route"
-                placeholder="e.g. Nhava Sheva to Dharavi"
-                value={route}
-                onChange={(e) => setRoute(e.currentTarget.value)}
-              />
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput
-                label="Services Offered"
-                placeholder="e.g. Origin Clearance"
-                value={servicesOffered}
-                onChange={(e) => setServicesOffered(e.currentTarget.value)}
-              />
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput
-                label="Commodity Type"
-                placeholder="e.g. General cargo"
-                value={commodityType}
-                onChange={(e) => setCommodityType(e.currentTarget.value)}
-              />
-            </Grid.Col>
-          </Grid>
-        </Card>
-
-        <Card withBorder padding="lg" radius="md">
           <Text fw={600} size="lg" mb="md">Client Details</Text>
           <Grid>
-            <Grid.Col span={{ base: 12, md: 8 }}>
-              <Autocomplete
-                label="Client Name"
-                required
-                data={clientsQuery.data?.map((c) => c.name) ?? []}
-                value={clientName}
-                onChange={selectClient}
-              />
-            </Grid.Col>
+            {customFieldsQuery.data
+              ?.filter((field) => field.isActive && CLIENT_FIELD_NAMES.has(field.name))
+              .map(renderField)}
 
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <TextInput 
-                label="GSTIN" 
-                placeholder="GST number"
-                value={clientGstin} 
-                onChange={(e) => setClientGstin(e.currentTarget.value)} 
-              />
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <TextInput 
-                label="Contact Person" 
-                placeholder="Name"
-                value={clientContactPerson} 
-                onChange={(e) => setClientContactPerson(e.currentTarget.value)} 
-              />
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <TextInput 
-                label="Phone" 
-                placeholder="Phone number"
-                value={clientPhone} 
-                onChange={(e) => setClientPhone(e.currentTarget.value)} 
-              />
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <TextInput 
-                label="Email" 
-                placeholder="Email address"
-                value={clientEmail} 
-                onChange={(e) => setClientEmail(e.currentTarget.value)} 
-              />
-            </Grid.Col>
-
-            <Grid.Col span={12}>
-              <Textarea 
-                label="Address" 
-                placeholder="Full address"
-                value={clientAddress} 
-                onChange={(e) => setClientAddress(e.currentTarget.value)} 
-              />
-            </Grid.Col>
           </Grid>
         </Card>
 
         {customFieldsQuery.data && customFieldsQuery.data.filter(f => f.isActive).length > 0 && (
           <Card withBorder padding="lg" radius="md">
-            <Text fw={600} size="lg" mb="md">Additional Details</Text>
+            <Text fw={600} size="lg" mb="md">Quotation Details</Text>
             <Grid>
-              {customFieldsQuery.data.filter(f => f.isActive).map((field) => {
-                let element: React.ReactNode = null;
-                if (field.type === "TEXT") {
-                  element = (
-                    <TextInput
-                      label={field.label}
-                      required={field.required}
-                      placeholder={`Enter ${field.label.toLowerCase()}`}
-                      value={customFields[field.name] ?? ""}
-                      onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.value })}
-                    />
-                  );
-                } else if (field.type === "NUMBER") {
-                  element = (
-                    <TextInput
-                      type="number"
-                      label={field.label}
-                      required={field.required}
-                      placeholder={`Enter ${field.label.toLowerCase()}`}
-                      value={customFields[field.name] ?? ""}
-                      onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.value ? Number(e.currentTarget.value) : "" })}
-                    />
-                  );
-                } else if (field.type === "BOOLEAN") {
-                  element = (
-                    <Switch
-                      label={field.label}
-                      checked={Boolean(customFields[field.name])}
-                      onChange={(e) => setCustomFields({ ...customFields, [field.name]: e.currentTarget.checked })}
-                      mt="xl"
-                    />
-                  );
-                } else if (field.type === "SELECT") {
-                  const opts = (field.options ?? "").split(",").map((o) => o.trim()).filter(Boolean);
-                  element = (
-                    <Select
-                      label={field.label}
-                      required={field.required}
-                      placeholder="Select an option"
-                      data={opts}
-                      value={customFields[field.name] ?? null}
-                      onChange={(val) => setCustomFields({ ...customFields, [field.name]: val })}
-                    />
-                  );
-                }
-                
-                return (
-                  <Grid.Col key={field.id} span={{ base: 12, md: field.type === "BOOLEAN" ? 4 : 6 }}>
-                    {element}
-                  </Grid.Col>
-                );
-              })}
+              {customFieldsQuery.data
+                .filter((field) => field.isActive && !CLIENT_FIELD_NAMES.has(field.name))
+                .map(renderField)}
             </Grid>
           </Card>
         )}
@@ -450,14 +366,6 @@ export function QuotationForm() {
               />
             </Grid.Col>
             
-            <Grid.Col span={12}>
-              <Textarea 
-                label="Additional Remarks" 
-                placeholder="Any comments, remarks, or specific conditions..."
-                value={additionalRemarks} 
-                onChange={(e) => setAdditionalRemarks(e.currentTarget.value)} 
-              />
-            </Grid.Col>
           </Grid>
         </Card>
 
