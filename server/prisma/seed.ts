@@ -1,6 +1,8 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "node:fs";
+import path from "node:path";
 
 const prisma = new PrismaClient();
 
@@ -172,10 +174,14 @@ Outside Weighment charges at actual (if required).
 
 Payment terms – Third party complete advance // rest within 15 days from date of Ashapura E-invoice.`;
 
+  const templatePath = path.resolve(process.cwd(), "src/lib/pdf/templates/quotation.hbs");
+  const quotationHtml = fs.readFileSync(templatePath, "utf8");
+
   await prisma.pdfTemplate.upsert({
     where: { id: 1 },
     update: {
       termsAndConditions: defaultTerms,
+      htmlTemplate: quotationHtml,
     },
     create: {
       id: 1,
@@ -185,6 +191,7 @@ Payment terms – Third party complete advance // rest within 15 days from date 
       headerHtml: "<h1>ashapura quotation</h1>",
       footerHtml: "<p>Thank you for your business.</p>",
       termsAndConditions: defaultTerms,
+      htmlTemplate: quotationHtml,
     },
   });
 

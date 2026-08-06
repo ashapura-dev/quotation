@@ -11,6 +11,7 @@ export interface PdfTemplate {
   headerHtml: string | null;
   footerHtml: string | null;
   termsAndConditions: string | null;
+  htmlTemplate: string | null;
   isDefault: boolean;
   isActive: boolean;
 }
@@ -24,6 +25,7 @@ export interface PdfTemplateInput {
   headerHtml?: string;
   footerHtml?: string;
   termsAndConditions?: string;
+  htmlTemplate?: string | null;
   logo?: File | null;
 }
 
@@ -67,4 +69,9 @@ export async function deactivatePdfTemplate(id: number): Promise<void> {
 export async function setDefaultPdfTemplate(id: number): Promise<PdfTemplate> {
   const { data } = await apiClient.post<{ pdfTemplate: PdfTemplate }>(`/api/pdf-templates/${id}/set-default`);
   return data.pdfTemplate;
+}
+
+export async function fetchDefaultTemplateHtml(): Promise<string> {
+  const { data } = await apiClient.get<{ defaultHtml: string }>("/api/pdf-templates/default-html");
+  return data.defaultHtml;
 }

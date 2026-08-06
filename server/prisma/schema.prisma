@@ -173,6 +173,7 @@ model PdfTemplate {
   headerHtml           String?        @db.Text
   footerHtml           String?        @db.Text
   termsAndConditions   String?        @db.Text
+  htmlTemplate         String?        @db.Text
   isDefault            Boolean        @default(false)
   isActive             Boolean        @default(true)
   createdById          Int

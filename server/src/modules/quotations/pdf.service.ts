@@ -124,6 +124,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       headerHtml: template.headerHtml,
       footerHtml: template.footerHtml,
       termsAndConditions: template.termsAndConditions,
+      htmlTemplate: template.htmlTemplate,
     },
   );
 

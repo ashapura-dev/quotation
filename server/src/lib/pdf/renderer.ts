@@ -73,6 +73,7 @@ export interface PdfBranding {
   headerHtml?: string | null;
   footerHtml?: string | null;
   termsAndConditions?: string | null;
+  htmlTemplate?: string | null;
 }
 
 function brandingContext(branding: PdfBranding) {
@@ -83,6 +84,7 @@ function brandingContext(branding: PdfBranding) {
     headerHtml: branding.headerHtml ?? "",
     footerHtml: branding.footerHtml ?? "",
     termsAndConditions: branding.termsAndConditions ?? "",
+    htmlTemplate: branding.htmlTemplate ?? null,
   };
 }
 
@@ -129,9 +131,18 @@ export interface QuotationPdfData {
   notes?: string | null;
 }
 
+export async function getDefaultTemplateHtml(): Promise<string> {
+  return fs.readFile(path.join(__dirname, "templates", "quotation.hbs"), "utf8");
+}
+
 export async function renderQuotationPdf(quotation: QuotationPdfData, branding: PdfBranding): Promise<Buffer> {
-  const template = await getTemplate("quotation.hbs");
-  const html = template({
+  let compiled: HandlebarsTemplateDelegate;
+  if (branding.htmlTemplate) {
+    compiled = Handlebars.compile(branding.htmlTemplate);
+  } else {
+    compiled = await getTemplate("quotation.hbs");
+  }
+  const html = compiled({
     ...quotation,
     createdAtFormatted: new Date(quotation.createdAt).toLocaleDateString(),
     logoDataUri: await logoDataUri(branding.logoPath),

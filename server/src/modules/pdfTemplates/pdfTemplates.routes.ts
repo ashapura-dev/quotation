@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { uploadLogo } from "../../middleware/upload.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { getDefaultTemplateHtml } from "../../lib/pdf/renderer.js";
 import {
   createPdfTemplate,
   deactivatePdfTemplate,
@@ -23,6 +24,14 @@ router.get(
 );
 
 router.get(
+  "/default-html",
+  asyncHandler(async (req, res) => {
+    const defaultHtml = await getDefaultTemplateHtml();
+    res.json({ defaultHtml });
+  }),
+);
+
+router.get(
   "/:id",
   asyncHandler(async (req, res) => {
     res.json({ pdfTemplate: await getPdfTemplate(Number(req.params.id)) });
@@ -38,6 +47,7 @@ const templateSchema = z.object({
   headerHtml: z.string().optional(),
   footerHtml: z.string().optional(),
   termsAndConditions: z.string().optional(),
+  htmlTemplate: z.string().optional().nullable(),
 });
 
 router.post(

@@ -25,11 +25,126 @@ import {
   fetchPdfTemplates,
   setDefaultPdfTemplate,
   updatePdfTemplate,
+  fetchDefaultTemplateHtml,
   type PdfTemplate,
   type PdfTemplateInput,
 } from "../../api/pdfTemplates";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+
+function renderPreviewHtml(template: string, values: any) {
+  const mockData = {
+    fontFamily: values.fontFamily || "Inter, sans-serif",
+    primaryColor: values.primaryColor || "#1c7ed6",
+    secondaryColor: values.secondaryColor || "#495057",
+    logoDataUri: values.logoUrl || "",
+    headerHtml: values.headerHtml || "",
+    footerHtml: values.footerHtml || "",
+    termsAndConditions: values.termsAndConditions || "",
+    quotationNumber: "QTN-2026-0001",
+    createdAtFormatted: new Date().toLocaleDateString(),
+    quotationType: values.quotationType || "DPD",
+    showType: values.quotationType !== "NON_DPD",
+    heading: ((values.quotationType === "NON_DPD" ? "IMPORT CLEARANCE FOR NON-DPD CARGO" : "IMPORT CLEARANCE FOR DPD CARGO") + " - NHAVA SHEVA").toUpperCase(),
+    clientName: "Acme Corporation Pvt Ltd",
+    clientAddress: "404, Business Hub, Sector 11, CBD Belapur, Navi Mumbai - 400614",
+    clientGstin: "27AAACA1111A1Z1",
+    clientContactPerson: "Mr. Rajan Sharma",
+    clientPhone: "+91 98765 43210",
+    clientEmail: "rajan@acme.com",
+    location: "Nhava Sheva",
+    route: "Nhava Sheva to Taloja MIDC",
+    servicesOffered: "Customs Clearance & Transportation",
+    commodityType: "Auto Parts (Dry Cargo)",
+    additionalRemarks: "Rates are subject to container availability.",
+    notes: "Payment Terms: Complete advance for third-party charges, rest within 15 days.",
+    preparedBy: "Admin User",
+    containers: [
+      { quantity: 1, containerSizeLabel: "20ft Standard" },
+      { quantity: 2, containerSizeLabel: "40ft Standard" }
+    ],
+    lineItems: [
+      { label: "Agency / Handling Charges", rate20: "Rs. 3000.00", rate40: "Rs. 3500.00", remark: "Per shipment" },
+      { label: "CFS Charges", rate20: "Rs. 7500.00", rate40: "Rs. 9000.00", remark: "As per tariff" },
+      { label: "Transportation", rate20: "Rs. 21000.00", rate40: "Rs. 23000.00", remark: "To MIDC Taloja" }
+    ],
+    customFields: [
+      { label: "Vessel Name", value: "MAERSK MC-KINNEY MOLLER" },
+      { label: "ETA Nhava Sheva", value: "2026-08-15" }
+    ]
+  };
+
+  let result = template || "";
+
+  // Replace loops first:
+  // {{#each containers}} ... {{/each}}
+  result = result.replace(/{{#each (\w+)}}([\s\S]*?){{\/each}}/g, (_: string, arrayName: string, innerContent: string) => {
+    const list = mockData[arrayName as keyof typeof mockData];
+    if (Array.isArray(list)) {
+      return list.map(item => {
+        let itemHtml = innerContent;
+        itemHtml = itemHtml.replace(/{{this\.(\w+)}}/g, (__: string, prop: string) => {
+          return String((item as any)[prop] ?? "");
+        });
+        itemHtml = itemHtml.replace(/{{#if this\.isTax}}([\s\S]*?){{\/if}}/g, (__: string, ifContent: string) => {
+          return (item as any).isTax ? ifContent : "";
+        });
+        return itemHtml;
+      }).join("");
+    }
+    return "";
+  });
+
+  // Replace conditionals with else:
+  // {{#if key}} ... {{else}} ... {{/if}}
+  let hasConditionals = true;
+  let iterations = 0;
+  while (hasConditionals && iterations < 50) {
+    const match = /{{#if ([\w\.]+)}}([\s\S]*?){{\/if}}/.exec(result);
+    if (match) {
+      const fullMatch = match[0];
+      const key = match[1];
+      const content = match[2];
+      
+      const ifVal = !!mockData[key as keyof typeof mockData];
+
+      let replacement = "";
+      const elseIndex = content.indexOf("{{else}}");
+      if (elseIndex !== -1) {
+        const ifContent = content.substring(0, elseIndex);
+        const elseContent = content.substring(elseIndex + 8);
+        replacement = ifVal ? ifContent : elseContent;
+      } else {
+        replacement = ifVal ? content : "";
+      }
+      
+      result = result.replace(fullMatch, replacement);
+      iterations++;
+    } else {
+      hasConditionals = false;
+    }
+  }
+
+  // Replace variable insertions:
+  // {{{variable}}}
+  result = result.replace(/{{{([\w\.]+)}}}/g, (_: string, key: string) => {
+    return String(mockData[key as keyof typeof mockData] ?? "");
+  });
+
+  // {{variable}}
+  result = result.replace(/{{([\w\.]+)}}/g, (_: string, key: string) => {
+    const val = mockData[key as keyof typeof mockData];
+    if (val === undefined || val === null) return "";
+    return String(val)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  });
+
+  return result;
+}
 
 const emptyValues: PdfTemplateInput = {
   name: "",
@@ -48,6 +163,7 @@ Vehicle Detention: In case of transportation, Rs.2500 per container per day will
 Outside Weighment charges at actual (if required).
 
 Payment terms – Third party complete advance // rest within 15 days from date of Ashapura E-invoice.`,
+  htmlTemplate: "",
   logo: null,
 };
 
@@ -56,11 +172,36 @@ export function PdfTemplates() {
   const [selected, setSelected] = useState<PdfTemplate | null>(null);
   const [isNew, setIsNew] = useState(true);
   const [opened, { open, close }] = useDisclosure(false);
+  const [defaultTemplateHtml, setDefaultTemplateHtml] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDefaultTemplateHtml()
+      .then((html) => setDefaultTemplateHtml(html))
+      .catch((err) => console.error("Failed to fetch default template HTML:", err));
+  }, []);
+
+  useEffect(() => {
+    if (defaultTemplateHtml && !form.values.htmlTemplate) {
+      form.setFieldValue("htmlTemplate", defaultTemplateHtml);
+    }
+  }, [defaultTemplateHtml]);
 
   const query = useQuery({ queryKey: ["pdf-templates"], queryFn: () => fetchPdfTemplates(true) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["pdf-templates"] });
 
   const form = useForm<PdfTemplateInput>({ initialValues: emptyValues });
+  const values = form.values;
+
+  useEffect(() => {
+    if (values.logo) {
+      const url = URL.createObjectURL(values.logo);
+      setLogoUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setLogoUrl(selected?.logoPath ? `${API_BASE}${selected.logoPath}` : null);
+    }
+  }, [values.logo, selected?.logoPath]);
 
   useEffect(() => {
     if (query.data && selected === null) {
@@ -95,7 +236,7 @@ export function PdfTemplates() {
       invalidate();
       setSelected(null);
       setIsNew(true);
-      form.setValues(emptyValues);
+      form.setValues({ ...emptyValues, htmlTemplate: defaultTemplateHtml });
     },
     onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
   });
@@ -112,6 +253,7 @@ export function PdfTemplates() {
       headerHtml: template.headerHtml ?? "",
       footerHtml: template.footerHtml ?? "",
       termsAndConditions: template.termsAndConditions ?? "",
+      htmlTemplate: template.htmlTemplate || defaultTemplateHtml,
       logo: null,
     });
   }
@@ -122,6 +264,7 @@ export function PdfTemplates() {
         ...emptyValues,
         name: values.name,
         quotationType: values.quotationType,
+        htmlTemplate: defaultTemplateHtml || null,
       }),
     onSuccess: (template) => {
       notifications.show({ color: "green", message: "PDF template created" });
@@ -132,8 +275,6 @@ export function PdfTemplates() {
     },
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not create template", message: err.message }),
   });
-
-  const values = form.values;
 
   return (
     <div>
@@ -238,6 +379,29 @@ export function PdfTemplates() {
                 <Textarea label="Header HTML" autosize minRows={2} {...form.getInputProps("headerHtml")} />
                 <Textarea label="Footer HTML" autosize minRows={2} {...form.getInputProps("footerHtml")} />
                 <Textarea label="Terms & conditions" autosize minRows={3} {...form.getInputProps("termsAndConditions")} />
+
+                <Group justify="space-between" align="center" mt="xs">
+                  <Text size="sm" fw={500}>HTML Template Code (Handlebars)</Text>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={() => {
+                      if (window.confirm("Reset HTML template code to default? Your current unsaved changes to this code block will be lost.")) {
+                        form.setFieldValue("htmlTemplate", defaultTemplateHtml);
+                      }
+                    }}
+                  >
+                    Reset to Default
+                  </Button>
+                </Group>
+                <Textarea
+                  placeholder="Paste your custom Handlebars HTML template here..."
+                  autosize
+                  minRows={10}
+                  maxRows={20}
+                  styles={{ input: { fontFamily: "monospace", fontSize: "12px", lineHeight: "1.4" } }}
+                  {...form.getInputProps("htmlTemplate")}
+                />
               </Stack>
             </form>
           </Card>
@@ -247,19 +411,20 @@ export function PdfTemplates() {
           <Text size="sm" fw={600} mb="xs">
             Live preview
           </Text>
-          <Card withBorder style={{ fontFamily: values.fontFamily, borderTop: `6px solid ${values.primaryColor}` }}>
-            {selected?.logoPath && (
-              <img src={`${API_BASE}${selected.logoPath}`} alt="Logo" style={{ maxHeight: 60, marginBottom: 8 }} />
-            )}
-            <div style={{ color: values.primaryColor }} dangerouslySetInnerHTML={{ __html: values.headerHtml ?? "" }} />
-            <Text size="sm" c={values.secondaryColor} my="sm">
-              Sample quotation line items would render here.
-            </Text>
-            <div style={{ color: values.secondaryColor, fontSize: 12 }} dangerouslySetInnerHTML={{ __html: values.footerHtml ?? "" }} />
-            <Text size="xs" c="dimmed" mt="sm">
-              {values.termsAndConditions}
-            </Text>
-          </Card>
+          <iframe
+            title="PDF Preview"
+            srcDoc={renderPreviewHtml(values.htmlTemplate || defaultTemplateHtml, {
+              ...values,
+              logoUrl: logoUrl,
+            })}
+            style={{
+              width: "100%",
+              height: "750px",
+              border: "1px solid #E2E8F0",
+              borderRadius: "6px",
+              backgroundColor: "#fff",
+            }}
+          />
         </Grid.Col>
       </Grid>
 

@@ -11,6 +11,7 @@ export interface PdfTemplateInput {
   headerHtml?: string;
   footerHtml?: string;
   termsAndConditions?: string;
+  htmlTemplate?: string | null;
 }
 
 export function listPdfTemplates(includeInactive = false) {
