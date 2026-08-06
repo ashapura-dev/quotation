@@ -1,10 +1,46 @@
-import { ActionIcon, Badge, Button, Card, Group, Modal, Select, Stack, Switch, Table, Text, TextInput, Title, Tooltip, Loader } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Center,
+  Divider,
+  Group,
+  Loader,
+  Modal,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Switch,
+  Table,
+  Text,
+  TextInput,
+  ThemeIcon,
+  Title,
+  Tooltip,
+} from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
-import { useState } from "react";
+import {
+  IconAdjustmentsHorizontal,
+  IconBraces,
+  IconCheck,
+  IconChevronRight,
+  IconFileDescription,
+  IconHash,
+  IconList,
+  IconPencil,
+  IconPlus,
+  IconSearch,
+  IconToggleLeft,
+  IconTrash,
+  IconTypography,
+  IconX,
+} from "@tabler/icons-react";
+import { useMemo, useState } from "react";
 import {
   createCustomField,
   deleteCustomField,
@@ -12,6 +48,19 @@ import {
   updateCustomField,
   type CustomField,
 } from "../../api/customFields";
+import styles from "./CustomFields.module.css";
+
+type FieldType = CustomField["type"];
+type VisibilityKey = "showInPdf" | "showInList" | "showInFilter" | "showInExport";
+
+const TYPE_META: Record<FieldType, { label: string; description: string; color: string; icon: typeof IconTypography }> = {
+  TEXT: { label: "Text", description: "Short or long written values", color: "blue", icon: IconTypography },
+  NUMBER: { label: "Number", description: "Numeric values and quantities", color: "violet", icon: IconHash },
+  BOOLEAN: { label: "Yes / No", description: "A simple on or off choice", color: "teal", icon: IconToggleLeft },
+  SELECT: { label: "Dropdown", description: "Choose from a preset list", color: "orange", icon: IconList },
+};
+
+const TYPE_OPTIONS = Object.entries(TYPE_META).map(([value, meta]) => ({ value, label: meta.label }));
 
 export function CustomFields() {
   const queryClient = useQueryClient();
@@ -19,6 +68,8 @@ export function CustomFields() {
   const [editing, setEditing] = useState<CustomField | null>(null);
   const [newOption, setNewOption] = useState("");
   const [optionsList, setOptionsList] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>("all");
 
   const query = useQuery({ queryKey: ["custom-fields", true], queryFn: () => fetchCustomFields(true) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["custom-fields"] });
@@ -26,7 +77,7 @@ export function CustomFields() {
   const form = useForm({
     initialValues: {
       label: "",
-      type: "TEXT" as "TEXT" | "NUMBER" | "BOOLEAN" | "SELECT",
+      type: "TEXT" as FieldType,
       required: false,
       options: "",
       isActive: true,
@@ -36,12 +87,16 @@ export function CustomFields() {
       showInList: true,
       isDefault: false,
     },
+    validate: {
+      label: (value) => value.trim().length < 2 ? "Enter a label with at least 2 characters" : null,
+      options: (value, values) => values.type === "SELECT" && !value ? "Add at least one dropdown option" : null,
+    },
   });
 
   const saveMutation = useMutation({
     mutationFn: (values: typeof form.values) => {
       const payload = {
-        label: values.label,
+        label: values.label.trim(),
         type: values.type,
         required: values.required,
         options: values.type === "SELECT" ? values.options : null,
@@ -54,46 +109,54 @@ export function CustomFields() {
       return editing ? updateCustomField(editing.id, payload) : createCustomField(payload);
     },
     onSuccess: () => {
-      notifications.show({ color: "green", message: editing ? "Custom field updated" : "Custom field added" });
+      notifications.show({ color: "teal", icon: <IconCheck size={16} />, message: editing ? "Custom field updated" : "Custom field created" });
       invalidate();
-      close();
-      setNewOption("");
-      setOptionsList([]);
+      handleClose();
     },
-    onError: (err: Error) => notifications.show({ color: "red", title: "Save failed", message: err.message }),
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not save field", message: err.message }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteCustomField,
     onSuccess: () => {
-      notifications.show({ color: "green", message: "Custom field removed successfully" });
+      notifications.show({ color: "teal", message: "Custom field removed" });
       invalidate();
     },
-    onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not delete field", message: err.message }),
   });
 
-  // Inline toggle — saves a single boolean flag without opening the modal
   const toggleMutation = useMutation({
-    mutationFn: ({ id, patch }: { id: number; patch: Partial<{ showInFilter: boolean; showInExport: boolean; showInList: boolean; showInPdf: boolean; required: boolean; isActive: boolean }> }) =>
+    mutationFn: ({ id, patch }: { id: number; patch: Partial<Record<VisibilityKey | "required" | "isActive", boolean>> }) =>
       updateCustomField(id, patch),
     onSuccess: () => invalidate(),
-    onError: (err: Error) => notifications.show({ color: "red", title: "Update failed", message: err.message }),
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not update field", message: err.message }),
   });
+
+  const fields = query.data ?? [];
+  const filteredFields = useMemo(() => fields.filter((field) => {
+    const matchesSearch = `${field.label} ${field.name} ${field.type}`.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? field.isActive : !field.isActive);
+    return matchesSearch && matchesStatus;
+  }), [fields, search, statusFilter]);
+
+  const stats = {
+    total: fields.length,
+    active: fields.filter((field) => field.isActive).length,
+    required: fields.filter((field) => field.required && !field.isDefault).length,
+    visible: fields.filter((field) => field.showInPdf).length,
+  };
+
+  function handleClose() {
+    close();
+    setEditing(null);
+    setNewOption("");
+    setOptionsList([]);
+    form.reset();
+  }
 
   function openCreate() {
     setEditing(null);
-    form.setValues({
-      label: "",
-      type: "TEXT",
-      required: false,
-      options: "",
-      isActive: true,
-      showInPdf: true,
-      showInFilter: true,
-      showInExport: true,
-      showInList: true,
-      isDefault: false,
-    });
+    form.reset();
     setNewOption("");
     setOptionsList([]);
     open();
@@ -113,274 +176,231 @@ export function CustomFields() {
       showInList: field.showInList,
       isDefault: field.isDefault,
     });
-    const opts = field.options ? field.options.split(",").map(o => o.trim()).filter(Boolean) : [];
-    setOptionsList(opts);
+    setOptionsList(field.options?.split(",").map((option) => option.trim()).filter(Boolean) ?? []);
     setNewOption("");
     open();
   }
 
   function addOption() {
-    const val = newOption.trim();
-    if (val && !optionsList.includes(val)) {
-      const updated = [...optionsList, val];
-      setOptionsList(updated);
-      form.setFieldValue("options", updated.join(", "));
-      setNewOption("");
-    }
+    const value = newOption.trim();
+    if (!value || optionsList.some((option) => option.toLowerCase() === value.toLowerCase())) return;
+    const updated = [...optionsList, value];
+    setOptionsList(updated);
+    form.setFieldValue("options", updated.join(", "));
+    form.clearFieldError("options");
+    setNewOption("");
   }
 
-  function removeOption(opt: string) {
-    const updated = optionsList.filter(o => o !== opt);
+  function removeOption(option: string) {
+    const updated = optionsList.filter((item) => item !== option);
     setOptionsList(updated);
     form.setFieldValue("options", updated.join(", "));
   }
 
+  function toggle(field: CustomField, key: VisibilityKey | "required" | "isActive", value: boolean) {
+    toggleMutation.mutate({ id: field.id, patch: { [key]: value } });
+  }
+
   return (
-    <div>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Custom Fields</Title>
-        <Button onClick={openCreate}>Add Custom Field</Button>
+    <Stack gap="xl" className={styles.page}>
+      <Group justify="space-between" align="flex-start" wrap="wrap">
+        <Box>
+          <Group gap={8} mb={6}>
+            <ThemeIcon variant="light" radius="md" size={34}><IconBraces size={19} /></ThemeIcon>
+            <Text size="xs" fw={700} c="brand.7" tt="uppercase" className={styles.eyebrow}>Data configuration</Text>
+          </Group>
+          <Title order={1} className={styles.title}>Custom Fields</Title>
+          <Text c="dimmed" mt={6}>Shape the information your team captures on every quotation.</Text>
+        </Box>
+        <Button leftSection={<IconPlus size={18} />} size="md" radius="md" onClick={openCreate}>Create field</Button>
       </Group>
 
-      <Table striped highlightOnHover verticalSpacing="sm">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Field Name</Table.Th>
-            <Table.Th>Field Type</Table.Th>
-            <Table.Th>Required</Table.Th>
-            <Table.Th>PDF</Table.Th>
-            <Table.Th>Show in List</Table.Th>
-            <Table.Th>Show in Filter</Table.Th>
-            <Table.Th>Show in Export</Table.Th>
-            <Table.Th>Active</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {query.isPending ? (
-            <Table.Tr>
-              <Table.Td colSpan={9} style={{ height: "200px" }}>
-                <Group justify="center" align="center" style={{ height: "100%" }}>
-                  <Loader size="md" />
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ) : (
-            query.data?.map((field) => (
-              <Table.Tr key={field.id}>
-                <Table.Td fw={500}>
-                  <Group gap="xs">
-                    <span>{field.label}</span>
-                    {field.isDefault && (
-                      <Badge size="xs" color="gray" variant="light">System</Badge>
-                    )}
-                  </Group>
-                </Table.Td>
-                <Table.Td>{field.isDefault ? "System Text" : field.type}</Table.Td>
-                {/* Required — editable for custom fields, disabled for system fields */}
-                <Table.Td>
-                  <Switch
-                    size="xs"
-                    checked={field.isDefault ? false : field.required}
-                    disabled={field.isDefault}
-                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { required: e.currentTarget.checked } })}
-                  />
-                </Table.Td>
-                {/* Show in PDF — only editable for non-default fields */}
-                <Table.Td>
-                  {field.isDefault ? (
-                    <Text size="xs" c="dimmed">—</Text>
-                  ) : (
-                    <Switch
-                      size="xs"
-                      checked={field.showInPdf}
-                      onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInPdf: e.currentTarget.checked } })}
-                    />
-                  )}
-                </Table.Td>
-                {/* Show in List */}
-                <Table.Td>
-                  <Switch
-                    size="xs"
-                    checked={field.showInList}
-                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInList: e.currentTarget.checked } })}
-                  />
-                </Table.Td>
-                {/* Show in Filter */}
-                <Table.Td>
-                  <Switch
-                    size="xs"
-                    checked={field.showInFilter}
-                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInFilter: e.currentTarget.checked } })}
-                  />
-                </Table.Td>
-                {/* Show in Export */}
-                <Table.Td>
-                  <Switch
-                    size="xs"
-                    checked={field.showInExport}
-                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { showInExport: e.currentTarget.checked } })}
-                  />
-                </Table.Td>
-                {/* Status (isActive) — editable for custom fields, disabled for system fields */}
-                <Table.Td>
-                  <Switch
-                    size="xs"
-                    checked={field.isActive}
-                    disabled={field.isDefault}
-                    color="green"
-                    onChange={(e) => toggleMutation.mutate({ id: field.id, patch: { isActive: e.currentTarget.checked } })}
-                  />
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <ActionIcon variant="subtle" onClick={() => openEdit(field)}>
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                    {!field.isDefault && (
-                      <Tooltip label="Delete">
-                        <ActionIcon
-                          variant="subtle"
-                          color="red"
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete the custom field "${field.label}"?`)) {
-                              deleteMutation.mutate(field.id);
-                            }
-                          }}
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))
-          )}
-        </Table.Tbody>
-      </Table>
+      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
+        <Metric label="Total fields" value={stats.total} color="blue" icon={IconBraces} />
+        <Metric label="Active" value={stats.active} color="teal" icon={IconCheck} />
+        <Metric label="Required" value={stats.required} color="violet" icon={IconAdjustmentsHorizontal} />
+        <Metric label="Shown in PDF" value={stats.visible} color="orange" icon={IconFileDescription} />
+      </SimpleGrid>
 
-      <Modal opened={opened} onClose={close} title={form.values.isDefault ? "Edit System Field" : (editing ? "Edit Custom Field" : "Add Custom Field")}>
+      <Paper withBorder radius="lg" className={styles.contentCard}>
+        <Group justify="space-between" p="lg" gap="md" wrap="wrap">
+          <Box>
+            <Text fw={650} size="lg">Field library</Text>
+            <Text size="sm" c="dimmed">Manage field behavior and where each value appears.</Text>
+          </Box>
+          <Group gap="sm" className={styles.filters}>
+            <TextInput
+              leftSection={<IconSearch size={16} />}
+              placeholder="Search fields..."
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              className={styles.search}
+            />
+            <Select
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              data={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              allowDeselect={false}
+              w={160}
+            />
+          </Group>
+        </Group>
+        <Divider />
+
+        <Box className={styles.tableWrap}>
+          <Table verticalSpacing="md" horizontalSpacing="lg">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Field</Table.Th>
+                <Table.Th>Type</Table.Th>
+                <Table.Th>Required</Table.Th>
+                <Table.Th>PDF</Table.Th>
+                <Table.Th>List</Table.Th>
+                <Table.Th>Filter</Table.Th>
+                <Table.Th>Export</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th ta="right">Actions</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {query.isPending ? (
+                <Table.Tr><Table.Td colSpan={9}><Center h={220}><Loader /></Center></Table.Td></Table.Tr>
+              ) : filteredFields.length === 0 ? (
+                <Table.Tr>
+                  <Table.Td colSpan={9}>
+                    <Center className={styles.emptyState}>
+                      <Stack align="center" gap={8}>
+                        <ThemeIcon size={48} radius="xl" variant="light" color="gray"><IconSearch size={23} /></ThemeIcon>
+                        <Text fw={600}>{fields.length ? "No matching fields" : "No custom fields yet"}</Text>
+                        <Text size="sm" c="dimmed">{fields.length ? "Try another search or status filter." : "Create your first field to start collecting more details."}</Text>
+                        {!fields.length && <Button variant="light" mt="xs" onClick={openCreate}>Create first field</Button>}
+                      </Stack>
+                    </Center>
+                  </Table.Td>
+                </Table.Tr>
+              ) : filteredFields.map((field) => {
+                const meta = TYPE_META[field.type];
+                const TypeIcon = meta.icon;
+                return (
+                  <Table.Tr key={field.id} className={!field.isActive ? styles.inactiveRow : undefined}>
+                    <Table.Td>
+                      <Group gap="sm" wrap="nowrap">
+                        <ThemeIcon variant="light" color={field.isDefault ? "gray" : meta.color} size={38} radius="md"><TypeIcon size={19} /></ThemeIcon>
+                        <Box>
+                          <Group gap={7} wrap="nowrap">
+                            <Text fw={600}>{field.label}</Text>
+                            {field.isDefault && <Badge size="xs" variant="light" color="gray">System</Badge>}
+                          </Group>
+                          <Text size="xs" c="dimmed">{field.name}</Text>
+                        </Box>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td><Badge variant="light" color={field.isDefault ? "gray" : meta.color}>{field.isDefault ? "System text" : meta.label}</Badge></Table.Td>
+                    <Table.Td>
+                      <Switch size="sm" checked={!field.isDefault && field.required} disabled={field.isDefault} onChange={(event) => toggle(field, "required", event.currentTarget.checked)} aria-label={`Make ${field.label} required`} />
+                    </Table.Td>
+                    <Table.Td><Switch size="sm" checked={field.showInPdf} disabled={field.isDefault} onChange={(event) => toggle(field, "showInPdf", event.currentTarget.checked)} aria-label={`Show ${field.label} in PDF`} /></Table.Td>
+                    <Table.Td><Switch size="sm" checked={field.showInList} onChange={(event) => toggle(field, "showInList", event.currentTarget.checked)} aria-label={`Show ${field.label} in list`} /></Table.Td>
+                    <Table.Td><Switch size="sm" checked={field.showInFilter} onChange={(event) => toggle(field, "showInFilter", event.currentTarget.checked)} aria-label={`Show ${field.label} in filters`} /></Table.Td>
+                    <Table.Td><Switch size="sm" checked={field.showInExport} onChange={(event) => toggle(field, "showInExport", event.currentTarget.checked)} aria-label={`Include ${field.label} in export`} /></Table.Td>
+                    <Table.Td><Badge variant="dot" color={field.isActive ? "teal" : "gray"}>{field.isActive ? "Active" : "Inactive"}</Badge></Table.Td>
+                    <Table.Td>
+                      <Group justify="flex-end" gap={6} wrap="nowrap">
+                        <Tooltip label="Edit field"><ActionIcon variant="subtle" color="gray" onClick={() => openEdit(field)} aria-label={`Edit ${field.label}`}><IconPencil size={17} /></ActionIcon></Tooltip>
+                        {!field.isDefault && <Tooltip label="Delete field"><ActionIcon variant="subtle" color="red" loading={deleteMutation.isPending} onClick={() => window.confirm(`Delete “${field.label}”? This cannot be undone.`) && deleteMutation.mutate(field.id)} aria-label={`Delete ${field.label}`}><IconTrash size={17} /></ActionIcon></Tooltip>}
+                        <IconChevronRight size={16} color="#94a3b8" />
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Box>
+        {!query.isPending && filteredFields.length > 0 && <Text size="xs" c="dimmed" px="lg" py="md">Showing {filteredFields.length} of {fields.length} fields</Text>}
+      </Paper>
+
+      <Modal
+        opened={opened}
+        onClose={handleClose}
+        title={null}
+        withCloseButton={false}
+        size="lg"
+        radius="lg"
+        padding={0}
+        centered
+        classNames={{ content: styles.modalContent, body: styles.modalBody }}
+      >
+        <Box className={styles.modalHeader}>
+          <Group justify="space-between" gap="md" wrap="nowrap" align="flex-start">
+            <Group gap="sm" wrap="nowrap">
+              <ThemeIcon size={42} radius="md" variant="light"><IconBraces size={22} /></ThemeIcon>
+              <Box>
+                <Title order={3}>{editing ? (form.values.isDefault ? "Edit system field" : "Edit custom field") : "Create custom field"}</Title>
+                <Text size="sm" c="dimmed">{editing ? "Update how this field behaves across quotations." : "Add a new piece of information to your quotation workflow."}</Text>
+              </Box>
+            </Group>
+            <ActionIcon variant="subtle" color="gray" radius="xl" size="lg" onClick={handleClose} aria-label="Close field editor">
+              <IconX size={20} />
+            </ActionIcon>
+          </Group>
+        </Box>
         <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}>
-          <Stack>
-            <TextInput label="Label" placeholder="e.g. Vessel Name" required {...form.getInputProps("label")} />
-            
-            {!form.values.isDefault && (
-              <Select
-                label="Type"
-                required
-                data={[
-                  { value: "TEXT", label: "Text Input" },
-                  { value: "NUMBER", label: "Number Input" },
-                  { value: "BOOLEAN", label: "Yes/No Toggle" },
-                  { value: "SELECT", label: "Dropdown Selection" },
-                ]}
-                {...form.getInputProps("type")}
-              />
-            )}
+          <Stack gap="lg" p="xl" className={styles.modalForm}>
+            <Box>
+              <Text fw={650} mb={4}>Field details</Text>
+              <Text size="sm" c="dimmed" mb="md">Give the field a clear label and select the best input type.</Text>
+              <SimpleGrid cols={{ base: 1, sm: form.values.isDefault ? 1 : 2 }}>
+                <TextInput label="Field label" placeholder="e.g. Vessel name" required {...form.getInputProps("label")} />
+                {!form.values.isDefault && <Select label="Input type" data={TYPE_OPTIONS} allowDeselect={false} required {...form.getInputProps("type")} />}
+              </SimpleGrid>
+              {!form.values.isDefault && <Text size="xs" c="dimmed" mt={8}>{TYPE_META[form.values.type].description}</Text>}
+            </Box>
 
             {!form.values.isDefault && form.values.type === "SELECT" && (
-              <Card withBorder p="sm" mt="xs" radius="md" style={{ background: "#f8fafc" }}>
-                <Text size="sm" fw={600} mb="xs">
-                  Dropdown Options
-                </Text>
-                <Group gap="xs" align="flex-end">
-                  <TextInput
-                    placeholder="Add option (e.g. Option A)"
-                    value={newOption}
-                    onChange={(e) => setNewOption(e.currentTarget.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addOption();
-                      }
-                    }}
-                    style={{ flex: 1 }}
-                  />
-                  <Button onClick={addOption}>Add</Button>
+              <Paper withBorder radius="md" p="md" className={styles.optionBuilder}>
+                <Text fw={600}>Dropdown options</Text>
+                <Text size="xs" c="dimmed" mb="sm">Add options in the order users should see them.</Text>
+                <Group gap="xs" align="flex-start">
+                  <TextInput value={newOption} onChange={(event) => setNewOption(event.currentTarget.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addOption(); } }} placeholder="Type an option" style={{ flex: 1 }} error={form.errors.options} />
+                  <Button variant="light" onClick={addOption}>Add</Button>
                 </Group>
-                {optionsList.length > 0 ? (
-                  <Group gap="xs" mt="md">
-                    {optionsList.map((opt) => (
-                      <Badge
-                        key={opt}
-                        variant="light"
-                        size="md"
-                        rightSection={
-                          <span
-                            style={{ cursor: "pointer", marginLeft: "4px", fontSize: "14px", fontWeight: "bold" }}
-                            onClick={() => removeOption(opt)}
-                          >
-                            &times;
-                          </span>
-                        }
-                      >
-                        {opt}
-                      </Badge>
-                    ))}
-                  </Group>
-                ) : (
-                  <Text size="xs" c="dimmed" mt="xs">
-                    No options added yet. At least one option is required.
-                  </Text>
-                )}
-              </Card>
+                <Group gap={8} mt="md">
+                  {optionsList.map((option) => <Badge key={option} size="lg" variant="white" className={styles.optionBadge} rightSection={<button type="button" className={styles.removeOption} onClick={() => removeOption(option)} aria-label={`Remove ${option}`}>×</button>}>{option}</Badge>)}
+                  {!optionsList.length && <Text size="xs" c="dimmed">No options added yet.</Text>}
+                </Group>
+              </Paper>
             )}
 
-            {!form.values.isDefault && (
-              <Switch
-                label="Required Field"
-                checked={form.values.required}
-                onChange={(event) => form.setFieldValue("required", event.currentTarget.checked)}
-                mt="xs"
-              />
-            )}
-
-            {!form.values.isDefault && (
-              <Switch
-                label="Show in PDF Template"
-                checked={form.values.showInPdf}
-                onChange={(event) => form.setFieldValue("showInPdf", event.currentTarget.checked)}
-                mt="xs"
-              />
-            )}
-
-            <Switch
-              label="Show in Filter Panel"
-              checked={form.values.showInFilter}
-              onChange={(event) => form.setFieldValue("showInFilter", event.currentTarget.checked)}
-              mt="xs"
-            />
-
-            <Switch
-              label="Include in Excel Export"
-              checked={form.values.showInExport}
-              onChange={(event) => form.setFieldValue("showInExport", event.currentTarget.checked)}
-              mt="xs"
-            />
-
-            <Switch
-              label="Show in Quotations List Column"
-              checked={form.values.showInList}
-              onChange={(event) => form.setFieldValue("showInList", event.currentTarget.checked)}
-              mt="xs"
-            />
-
-            {editing && !form.values.isDefault && (
-              <Switch
-                label="Is Active"
-                checked={form.values.isActive}
-                onChange={(event) => form.setFieldValue("isActive", event.currentTarget.checked)}
-                mt="xs"
-              />
-            )}
-
-            <Button type="submit" loading={saveMutation.isPending} mt="sm">
-              Save
-            </Button>
+            <Divider />
+            <Box>
+              <Text fw={650} mb={4}>Behavior & visibility</Text>
+              <Text size="sm" c="dimmed" mb="md">Choose where this value is available throughout the app.</Text>
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                {!form.values.isDefault && <SettingSwitch title="Required field" description="Users must provide a value" checked={form.values.required} onChange={(value) => form.setFieldValue("required", value)} />}
+                {!form.values.isDefault && <SettingSwitch title="Active" description="Available on new quotations" checked={form.values.isActive} onChange={(value) => form.setFieldValue("isActive", value)} />}
+                {!form.values.isDefault && <SettingSwitch title="Show in PDF" description="Print on quotation documents" checked={form.values.showInPdf} onChange={(value) => form.setFieldValue("showInPdf", value)} />}
+                <SettingSwitch title="Show in list" description="Display as a quotation column" checked={form.values.showInList} onChange={(value) => form.setFieldValue("showInList", value)} />
+                <SettingSwitch title="Show in filters" description="Use to narrow quotation results" checked={form.values.showInFilter} onChange={(value) => form.setFieldValue("showInFilter", value)} />
+                <SettingSwitch title="Include in export" description="Add to exported spreadsheets" checked={form.values.showInExport} onChange={(value) => form.setFieldValue("showInExport", value)} />
+              </SimpleGrid>
+            </Box>
           </Stack>
+          <Group justify="flex-end" className={styles.modalFooter}>
+            <Button variant="default" onClick={handleClose}>Cancel</Button>
+            <Button type="submit" loading={saveMutation.isPending}>{editing ? "Save changes" : "Create field"}</Button>
+          </Group>
         </form>
       </Modal>
-    </div>
+    </Stack>
   );
+}
+
+function Metric({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: typeof IconBraces }) {
+  return <Paper withBorder radius="lg" p="lg" className={styles.metric}><Group justify="space-between" wrap="nowrap"><Box><Text size="xs" c="dimmed" fw={600} tt="uppercase" className={styles.metricLabel}>{label}</Text><Text fz={28} fw={700} lh={1.2} mt={5}>{value}</Text></Box><ThemeIcon color={color} variant="light" size={44} radius="md"><Icon size={22} /></ThemeIcon></Group></Paper>;
+}
+
+function SettingSwitch({ title, description, checked, onChange }: { title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return <Paper withBorder radius="md" p="md" className={styles.setting}><Group justify="space-between" wrap="nowrap"><Box><Text size="sm" fw={600}>{title}</Text><Text size="xs" c="dimmed">{description}</Text></Box><Switch checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} /></Group></Paper>;
 }
