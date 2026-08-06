@@ -71,84 +71,86 @@ export function QuotationList() {
 
   return (
     <div>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Quotations</Title>
-        <Group>
-          <Button
-            component="a"
-            href={exportQuotationsUrl(filters, API_BASE)}
-            variant="light"
-            leftSection={<IconDownload size={16} />}
-          >
-            Export
-          </Button>
-          <Button onClick={() => navigate("/quotations/new")}>New quotation</Button>
+      <div style={{ position: "sticky", top: 60, backgroundColor: "#f8fafc", zIndex: 100, paddingTop: "8px", paddingBottom: "12px", borderBottom: "1px solid rgba(0,0,0,0.05)", marginBottom: "16px" }}>
+        <Group justify="space-between" mb="sm">
+          <Title order={2}>Quotations</Title>
+          <Group>
+            <Button
+              component="a"
+              href={exportQuotationsUrl(filters, API_BASE)}
+              variant="light"
+              leftSection={<IconDownload size={16} />}
+            >
+              Export
+            </Button>
+            <Button onClick={() => navigate("/quotations/new")}>New quotation</Button>
+          </Group>
         </Group>
-      </Group>
 
-      <Group mb="md" gap="sm" align="flex-end">
-        <TextInput
-          placeholder="Search by client name"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.currentTarget.value);
-            setPage(1);
-          }}
-          w={220}
-        />
-        <Select
-          placeholder="Status"
-          clearable
-          data={[
-            { value: "DRAFT", label: "Draft" },
-            { value: "PENDING", label: "Pending Review" },
-            { value: "APPROVED", label: "Approved" },
-            { value: "SENT_TO_CLIENT", label: "Sent to Client" },
-            { value: "APPROVED_BY_CLIENT", label: "Approved by Client" },
-            { value: "REJECTED_BY_CLIENT", label: "Rejected by Client" },
-          ]}
-          value={status}
-          onChange={(v) => {
-            setStatus(v);
-            setPage(1);
-          }}
-          w={160}
-        />
-        <Select
-          placeholder="Type"
-          clearable
-          data={[
-            { value: "DPD", label: "DPD" },
-            { value: "NON_DPD", label: "Non-DPD" },
-          ]}
-          value={quotationType}
-          onChange={(v) => {
-            setQuotationType(v);
-            setPage(1);
-          }}
-          w={140}
-        />
-        <TextInput
-          type="date"
-          label="From"
-          value={dateFrom}
-          onChange={(e) => {
-            setDateFrom(e.currentTarget.value);
-            setPage(1);
-          }}
-        />
-        <TextInput
-          type="date"
-          label="To"
-          value={dateTo}
-          onChange={(e) => {
-            setDateTo(e.currentTarget.value);
-            setPage(1);
-          }}
-        />
-      </Group>
+        <Group gap="sm" align="flex-end">
+          <TextInput
+            placeholder="Search by client name"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
+            w={220}
+          />
+          <Select
+            placeholder="Status"
+            clearable
+            data={[
+              { value: "DRAFT", label: "Draft" },
+              { value: "PENDING", label: "Pending Review" },
+              { value: "APPROVED", label: "Approved" },
+              { value: "SENT_TO_CLIENT", label: "Sent to Client" },
+              { value: "APPROVED_BY_CLIENT", label: "Approved by Client" },
+              { value: "REJECTED_BY_CLIENT", label: "Rejected by Client" },
+            ]}
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
+            w={160}
+          />
+          <Select
+            placeholder="Type"
+            clearable
+            data={[
+              { value: "DPD", label: "DPD" },
+              { value: "NON_DPD", label: "Non-DPD" },
+            ]}
+            value={quotationType}
+            onChange={(v) => {
+              setQuotationType(v);
+              setPage(1);
+            }}
+            w={140}
+          />
+          <TextInput
+            type="date"
+            label="From"
+            value={dateFrom}
+            onChange={(e) => {
+              setDateFrom(e.currentTarget.value);
+              setPage(1);
+            }}
+          />
+          <TextInput
+            type="date"
+            label="To"
+            value={dateTo}
+            onChange={(e) => {
+              setDateTo(e.currentTarget.value);
+              setPage(1);
+            }}
+          />
+        </Group>
+      </div>
 
-      <Table striped highlightOnHover verticalSpacing="sm">
+      <Table className="sticky-th" striped highlightOnHover verticalSpacing="sm">
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Number</Table.Th>

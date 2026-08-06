@@ -88,6 +88,13 @@ th {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
   text-align: left;
   border-bottom: none !important;
+  position: sticky !important;
+  top: 60px !important;
+  z-index: 80 !important;
+}
+
+.sticky-th th {
+  top: 175px !important;
 }
 
 td {
