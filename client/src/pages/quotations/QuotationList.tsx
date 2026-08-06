@@ -19,6 +19,7 @@ import { IconDownload, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteQuotation, exportQuotationsUrl, fetchQuotations, type QuotationFilters } from "../../api/quotations";
+import { fetchCustomFields } from "../../api/customFields";
 import { useAuth } from "../../hooks/useAuth";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -45,6 +46,12 @@ export function QuotationList() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, string>>({});
+
+  const customFieldsQuery = useQuery({
+    queryKey: ["custom-fields", false],
+    queryFn: () => fetchCustomFields(false),
+  });
 
   const filters: QuotationFilters = {
     search: debouncedSearch || undefined,
@@ -54,6 +61,7 @@ export function QuotationList() {
     dateTo: dateTo || undefined,
     page,
     pageSize,
+    ...customFieldFilters,
   };
 
   const query = useQuery({ queryKey: ["quotations", filters], queryFn: () => fetchQuotations(filters) });
@@ -77,7 +85,21 @@ export function QuotationList() {
           <Group>
             <Button
               component="a"
-              href={exportQuotationsUrl(filters, API_BASE)}
+              href={exportQuotationsUrl(filters, [
+                "quotationNumber",
+                "clientName",
+                "quotationType",
+                "status",
+                "containers",
+                "subtotal",
+                "taxTotal",
+                "otherAdjustmentsTotal",
+                "grandTotal",
+                "createdBy",
+                "approvedBy",
+                "createdAt",
+                ...(customFieldsQuery.data?.filter(f => f.showInExport).map(f => f.name) || [])
+              ], API_BASE)}
               variant="light"
               leftSection={<IconDownload size={16} />}
             >
@@ -147,6 +169,57 @@ export function QuotationList() {
               setPage(1);
             }}
           />
+
+          {customFieldsQuery.data?.filter(f => f.showInFilter).map(f => {
+            if (f.type === "SELECT") {
+              const opts = f.options ? f.options.split(",").map(o => ({ value: o.trim(), label: o.trim() })) : [];
+              return (
+                <Select
+                  key={f.name}
+                  placeholder={f.label}
+                  clearable
+                  data={opts}
+                  value={customFieldFilters[f.name] || null}
+                  onChange={(v) => {
+                    setCustomFieldFilters(prev => ({ ...prev, [f.name]: v || "" }));
+                    setPage(1);
+                  }}
+                  w={160}
+                />
+              );
+            }
+            if (f.type === "BOOLEAN") {
+              return (
+                <Select
+                  key={f.name}
+                  placeholder={f.label}
+                  clearable
+                  data={[
+                    { value: "true", label: "Yes" },
+                    { value: "false", label: "No" },
+                  ]}
+                  value={customFieldFilters[f.name] || null}
+                  onChange={(v) => {
+                    setCustomFieldFilters(prev => ({ ...prev, [f.name]: v || "" }));
+                    setPage(1);
+                  }}
+                  w={140}
+                />
+              );
+            }
+            return (
+              <TextInput
+                key={f.name}
+                placeholder={f.label}
+                value={customFieldFilters[f.name] || ""}
+                onChange={(e) => {
+                  setCustomFieldFilters(prev => ({ ...prev, [f.name]: e.currentTarget.value }));
+                  setPage(1);
+                }}
+                w={160}
+              />
+            );
+          })}
         </Group>
       </div>
 
@@ -161,13 +234,16 @@ export function QuotationList() {
             <Table.Th>Created by</Table.Th>
             <Table.Th>Approved by</Table.Th>
             <Table.Th>Date</Table.Th>
+            {customFieldsQuery.data?.filter(f => f.showInList).map(f => (
+              <Table.Th key={f.name}>{f.label}</Table.Th>
+            ))}
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {query.isPending ? (
             <Table.Tr>
-              <Table.Td colSpan={9} style={{ height: "200px" }}>
+              <Table.Td colSpan={9 + (customFieldsQuery.data?.filter(f => f.showInList).length || 0)} style={{ height: "200px" }}>
                 <Group justify="center" align="center" style={{ height: "100%" }}>
                   <Loader size="md" />
                 </Group>
@@ -191,6 +267,18 @@ export function QuotationList() {
                   <Table.Td>{q.createdBy?.name}</Table.Td>
                   <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
                   <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
+                  {customFieldsQuery.data?.filter(f => f.showInList).map(f => {
+                    const val = (q.customFields as Record<string, any>)?.[f.name];
+                    let displayVal = "-";
+                    if (val !== undefined && val !== null) {
+                      if (f.type === "BOOLEAN") {
+                        displayVal = val ? "Yes" : "No";
+                      } else {
+                        displayVal = String(val);
+                      }
+                    }
+                    return <Table.Td key={f.name}>{displayVal}</Table.Td>;
+                  })}
                   <Table.Td>
                     {canDelete && (
                       <Tooltip label="Delete">

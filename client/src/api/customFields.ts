@@ -9,6 +9,9 @@ export interface CustomField {
   options: string | null;
   isActive: boolean;
   showInPdf: boolean;
+  showInFilter: boolean;
+  showInExport: boolean;
+  showInList: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +29,9 @@ export async function createCustomField(input: {
   required?: boolean;
   options?: string | null;
   showInPdf?: boolean;
+  showInFilter?: boolean;
+  showInExport?: boolean;
+  showInList?: boolean;
 }): Promise<CustomField> {
   const { data } = await apiClient.post<{ customField: CustomField }>("/api/custom-fields", input);
   return data.customField;
@@ -40,6 +46,9 @@ export async function updateCustomField(
     options?: string | null;
     isActive?: boolean;
     showInPdf?: boolean;
+    showInFilter?: boolean;
+    showInExport?: boolean;
+    showInList?: boolean;
   }
 ): Promise<CustomField> {
   const { data } = await apiClient.put<{ customField: CustomField }>(`/api/custom-fields/${id}`, input);

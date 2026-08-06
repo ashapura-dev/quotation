@@ -31,6 +31,9 @@ export function CustomFields() {
       options: "",
       isActive: true,
       showInPdf: true,
+      showInFilter: true,
+      showInExport: true,
+      showInList: true,
     },
   });
 
@@ -43,6 +46,9 @@ export function CustomFields() {
         options: values.type === "SELECT" ? values.options : null,
         isActive: values.isActive,
         showInPdf: values.showInPdf,
+        showInFilter: values.showInFilter,
+        showInExport: values.showInExport,
+        showInList: values.showInList,
       };
       return editing ? updateCustomField(editing.id, payload) : createCustomField(payload);
     },
@@ -74,6 +80,9 @@ export function CustomFields() {
       options: "",
       isActive: true,
       showInPdf: true,
+      showInFilter: true,
+      showInExport: true,
+      showInList: true,
     });
     setNewOption("");
     setOptionsList([]);
@@ -89,6 +98,9 @@ export function CustomFields() {
       options: field.options ?? "",
       isActive: field.isActive,
       showInPdf: field.showInPdf,
+      showInFilter: field.showInFilter,
+      showInExport: field.showInExport,
+      showInList: field.showInList,
     });
     const opts = field.options ? field.options.split(",").map(o => o.trim()).filter(Boolean) : [];
     setOptionsList(opts);
@@ -128,6 +140,9 @@ export function CustomFields() {
             <Table.Th>Required</Table.Th>
             <Table.Th>Options</Table.Th>
             <Table.Th>Show in PDF</Table.Th>
+            <Table.Th>Show in List</Table.Th>
+            <Table.Th>Show in Filter</Table.Th>
+            <Table.Th>Show in Export</Table.Th>
             <Table.Th>Status</Table.Th>
             <Table.Th />
           </Table.Tr>
@@ -135,7 +150,7 @@ export function CustomFields() {
         <Table.Tbody>
           {query.isPending ? (
             <Table.Tr>
-              <Table.Td colSpan={8} style={{ height: "200px" }}>
+              <Table.Td colSpan={11} style={{ height: "200px" }}>
                 <Group justify="center" align="center" style={{ height: "100%" }}>
                   <Loader size="md" />
                 </Group>
@@ -150,6 +165,9 @@ export function CustomFields() {
                 <Table.Td>{field.required ? "Yes" : "No"}</Table.Td>
                 <Table.Td>{field.type === "SELECT" ? field.options || "-" : "-"}</Table.Td>
                 <Table.Td>{field.showInPdf ? "Yes" : "No"}</Table.Td>
+                <Table.Td>{field.showInList ? "Yes" : "No"}</Table.Td>
+                <Table.Td>{field.showInFilter ? "Yes" : "No"}</Table.Td>
+                <Table.Td>{field.showInExport ? "Yes" : "No"}</Table.Td>
                 <Table.Td>{field.isActive ? "Active" : "Inactive"}</Table.Td>
                 <Table.Td>
                   <Group gap="xs">
@@ -253,6 +271,27 @@ export function CustomFields() {
               label="Show in PDF Template"
               checked={form.values.showInPdf}
               onChange={(event) => form.setFieldValue("showInPdf", event.currentTarget.checked)}
+              mt="xs"
+            />
+
+            <Switch
+              label="Show in Filter Panel"
+              checked={form.values.showInFilter}
+              onChange={(event) => form.setFieldValue("showInFilter", event.currentTarget.checked)}
+              mt="xs"
+            />
+
+            <Switch
+              label="Include in Excel Export"
+              checked={form.values.showInExport}
+              onChange={(event) => form.setFieldValue("showInExport", event.currentTarget.checked)}
+              mt="xs"
+            />
+
+            <Switch
+              label="Show in Quotations List Column"
+              checked={form.values.showInList}
+              onChange={(event) => form.setFieldValue("showInList", event.currentTarget.checked)}
               mt="xs"
             />
 

@@ -88,6 +88,7 @@ export interface QuotationFilters {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  [key: string]: any;
 }
 
 export interface QuotationListResult {
@@ -116,11 +117,12 @@ export async function emailQuotation(id: number, input: { templateId?: number | 
   return data;
 }
 
-export function exportQuotationsUrl(filters: QuotationFilters, apiBase: string): string {
+export function exportQuotationsUrl(filters: QuotationFilters, visibleColumns: string[], apiBase: string): string {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
   });
+  params.set("fields", visibleColumns.join(","));
   return `${apiBase}/api/quotations/export?${params.toString()}`;
 }
 

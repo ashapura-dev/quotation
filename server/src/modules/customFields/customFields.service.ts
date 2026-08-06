@@ -22,6 +22,9 @@ export async function createCustomField(input: {
   required?: boolean;
   options?: string | null;
   showInPdf?: boolean;
+  showInFilter?: boolean;
+  showInExport?: boolean;
+  showInList?: boolean;
 }) {
   const name = slugify(input.label);
   if (!name) {
@@ -44,6 +47,9 @@ export async function createCustomField(input: {
           options: input.options ?? null,
           isActive: true,
           showInPdf: input.showInPdf ?? true,
+          showInFilter: input.showInFilter ?? true,
+          showInExport: input.showInExport ?? true,
+          showInList: input.showInList ?? true,
         },
       });
     }
@@ -58,6 +64,9 @@ export async function createCustomField(input: {
       required: input.required ?? false,
       options: input.options ?? null,
       showInPdf: input.showInPdf ?? true,
+      showInFilter: input.showInFilter ?? true,
+      showInExport: input.showInExport ?? true,
+      showInList: input.showInList ?? true,
     },
   });
 }
@@ -71,6 +80,9 @@ export async function updateCustomField(
     options?: string | null;
     isActive?: boolean;
     showInPdf?: boolean;
+    showInFilter?: boolean;
+    showInExport?: boolean;
+    showInList?: boolean;
   }
 ) {
   const field = await prisma.customField.findUnique({ where: { id } });
@@ -83,6 +95,9 @@ export async function updateCustomField(
     options: input.options,
     isActive: input.isActive,
     showInPdf: input.showInPdf,
+    showInFilter: input.showInFilter,
+    showInExport: input.showInExport,
+    showInList: input.showInList,
   };
 
   if (input.label && input.label !== field.label) {

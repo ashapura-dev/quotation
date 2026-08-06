@@ -27,6 +27,9 @@ const createSchema = z.object({
   required: z.boolean().optional(),
   options: z.string().nullable().optional(),
   showInPdf: z.boolean().optional(),
+  showInFilter: z.boolean().optional(),
+  showInExport: z.boolean().optional(),
+  showInList: z.boolean().optional(),
 });
 
 router.post(
@@ -44,6 +47,9 @@ const updateSchema = z.object({
   options: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
   showInPdf: z.boolean().optional(),
+  showInFilter: z.boolean().optional(),
+  showInExport: z.boolean().optional(),
+  showInList: z.boolean().optional(),
 });
 
 router.put(

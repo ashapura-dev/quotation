@@ -380,16 +380,19 @@ model Notification {
 }
 
 model CustomField {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  label     String
-  type      String   // TEXT, NUMBER, BOOLEAN, SELECT
-  required  Boolean  @default(false)
-  options   String?  @db.Text
-  isActive  Boolean  @default(true)
-  showInPdf Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  label        String
+  type         String   // TEXT, NUMBER, BOOLEAN, SELECT
+  required     Boolean  @default(false)
+  options      String?  @db.Text
+  isActive     Boolean  @default(true)
+  showInPdf    Boolean  @default(true)
+  showInFilter Boolean  @default(true)
+  showInExport Boolean  @default(true)
+  showInList   Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("custom_fields")
 }

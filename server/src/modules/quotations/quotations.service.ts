@@ -377,6 +377,14 @@ export interface QuotationFilters {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  customFieldFilters?: Record<string, any>;
+}
+
+function parseQueryValue(val: any) {
+  if (val === "true") return true;
+  if (val === "false") return false;
+  if (!isNaN(Number(val)) && val.trim() !== "") return Number(val);
+  return val;
 }
 
 function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
@@ -391,6 +399,25 @@ function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
       ...(filters.dateTo ? { lte: new Date(`${filters.dateTo}T23:59:59.999Z`) } : {}),
     };
   }
+
+  if (filters.customFieldFilters && Object.keys(filters.customFieldFilters).length > 0) {
+    const andArray: any[] = [];
+    Object.entries(filters.customFieldFilters).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== "") {
+        const parsedVal = parseQueryValue(val);
+        andArray.push({
+          customFields: {
+            path: [key],
+            equals: parsedVal,
+          }
+        });
+      }
+    });
+    if (andArray.length > 0) {
+      where.AND = andArray;
+    }
+  }
+
   return where;
 }
 

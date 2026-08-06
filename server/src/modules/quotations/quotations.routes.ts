@@ -64,6 +64,15 @@ const quotationSchema = z.object({
 });
 
 function filtersFromQuery(query: Record<string, unknown>) {
+  const standardKeys = ["search", "status", "quotationType", "containerSizeId", "dateFrom", "dateTo", "page", "pageSize", "fields"];
+  const customFieldFilters: Record<string, any> = {};
+
+  Object.entries(query).forEach(([key, val]) => {
+    if (!standardKeys.includes(key) && val !== undefined && val !== null && val !== "") {
+      customFieldFilters[key] = val;
+    }
+  });
+
   return {
     search: typeof query.search === "string" && query.search ? query.search : undefined,
     status: typeof query.status === "string" && query.status ? query.status : undefined,
@@ -73,44 +82,76 @@ function filtersFromQuery(query: Record<string, unknown>) {
     dateTo: typeof query.dateTo === "string" && query.dateTo ? query.dateTo : undefined,
     page: query.page ? Number(query.page) : undefined,
     pageSize: query.pageSize ? Number(query.pageSize) : undefined,
+    fields: typeof query.fields === "string" ? query.fields : undefined,
+    customFieldFilters,
   };
 }
 
 router.get(
   "/export",
   asyncHandler(async (req, res) => {
-    const quotations = await listQuotationsForExport(filtersFromQuery(req.query));
+    const parsedFilters = filtersFromQuery(req.query);
+    const quotations = await listQuotationsForExport(parsedFilters);
+
+    // Fetch custom field labels to map them dynamically to header titles
+    const customFields = await prisma.customField.findMany();
+    const customFieldsMap = customFields.reduce((acc, f) => {
+      acc[f.name] = f.label;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const AVAILABLE_COLUMNS: Record<string, { header: string; width: number; getValue: (q: any) => any }> = {
+      quotationNumber: { header: "Quotation Number", width: 20, getValue: (q) => q.quotationNumber },
+      clientName: { header: "Client", width: 28, getValue: (q) => q.clientName },
+      quotationType: { header: "Type", width: 10, getValue: (q) => q.quotationType },
+      status: { header: "Status", width: 12, getValue: (q) => q.status },
+      containers: { header: "Containers", width: 24, getValue: (q) => q.containers.map((c: any) => `${c.containerSizeLabel} x${c.quantity}`).join(", ") },
+      subtotal: { header: "Subtotal", width: 14, getValue: (q) => q.subtotal },
+      taxTotal: { header: "Tax", width: 14, getValue: (q) => q.taxTotal },
+      otherAdjustmentsTotal: { header: "Other Adjustments", width: 16, getValue: (q) => q.otherAdjustmentsTotal },
+      grandTotal: { header: "Grand Total", width: 14, getValue: (q) => q.grandTotal },
+      createdBy: { header: "Created By", width: 18, getValue: (q) => q.createdBy?.name },
+      approvedBy: { header: "Approved By", width: 18, getValue: (q) => q.approvedBy?.name ?? "-" },
+      createdAt: { header: "Created At", width: 20, getValue: (q) => q.createdAt.toISOString() },
+    };
+
+    let activeKeys = Object.keys(AVAILABLE_COLUMNS);
+    if (typeof parsedFilters.fields === "string" && parsedFilters.fields.trim() !== "") {
+      activeKeys = parsedFilters.fields.split(",").map(k => k.trim());
+    }
 
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Quotations");
-    sheet.columns = [
-      { header: "Quotation Number", key: "quotationNumber", width: 20 },
-      { header: "Client", key: "clientName", width: 28 },
-      { header: "Type", key: "quotationType", width: 10 },
-      { header: "Status", key: "status", width: 12 },
-      { header: "Containers", key: "containers", width: 24 },
-      { header: "Subtotal", key: "subtotal", width: 14 },
-      { header: "Tax", key: "taxTotal", width: 14 },
-      { header: "Other Adjustments", key: "otherAdjustmentsTotal", width: 16 },
-      { header: "Grand Total", key: "grandTotal", width: 14 },
-      { header: "Created By", key: "createdBy", width: 18 },
-      { header: "Created At", key: "createdAt", width: 20 },
-    ];
+
+    sheet.columns = activeKeys.map(key => {
+      if (AVAILABLE_COLUMNS[key]) {
+        return {
+          header: AVAILABLE_COLUMNS[key].header,
+          key,
+          width: AVAILABLE_COLUMNS[key].width
+        };
+      }
+      const label = customFieldsMap[key] || key;
+      return {
+        header: label,
+        key,
+        width: 20
+      };
+    });
+
     for (const q of quotations) {
-      sheet.addRow({
-        quotationNumber: q.quotationNumber,
-        clientName: q.clientName,
-        quotationType: q.quotationType,
-        status: q.status,
-        containers: q.containers.map((c) => `${c.containerSizeLabel} x${c.quantity}`).join(", "),
-        subtotal: q.subtotal,
-        taxTotal: q.taxTotal,
-        otherAdjustmentsTotal: q.otherAdjustmentsTotal,
-        grandTotal: q.grandTotal,
-        createdBy: q.createdBy?.name,
-        createdAt: q.createdAt.toISOString(),
+      const rowData: Record<string, any> = {};
+      activeKeys.forEach(key => {
+        if (AVAILABLE_COLUMNS[key]) {
+          rowData[key] = AVAILABLE_COLUMNS[key].getValue(q);
+        } else {
+          const customVal = (q.customFields as Record<string, any>)?.[key];
+          rowData[key] = customVal !== undefined && customVal !== null ? String(customVal) : "-";
+        }
       });
+      sheet.addRow(rowData);
     }
+
     sheet.getRow(1).font = { bold: true };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
