@@ -1,15 +1,23 @@
-import { Button, Card, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Box, Button, Group, PasswordInput, Stack, Text, TextInput, ThemeIcon, Title } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
+import { IconArrowRight, IconCheck, IconLock, IconMail, IconShieldCheck } from "@tabler/icons-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "../hooks/useAuth";
+import styles from "./Login.module.css";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
+
+const BENEFITS = [
+  "Create accurate quotations in minutes",
+  "Manage approvals from one workspace",
+  "Keep clients, rates and documents organized",
+];
 
 export function Login() {
   const { login } = useAuth();
@@ -24,7 +32,7 @@ export function Login() {
   async function handleSubmit(values: typeof form.values) {
     setSubmitting(true);
     try {
-      await login(values.email, values.password);
+      await login(values.email.trim(), values.password);
       navigate("/dashboard");
     } catch (err) {
       notifications.show({ color: "red", title: "Login failed", message: (err as Error).message });
@@ -34,105 +42,89 @@ export function Login() {
   }
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", backgroundColor: "#0f172a", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
-      {/* Decorative Glow Circles */}
-      <div className="glow-circle" style={{ width: "300px", height: "300px", background: "radial-gradient(circle, #3b82f6 0%, transparent 70%)", top: "10%", left: "15%" }} />
-      <div className="glow-circle" style={{ width: "400px", height: "400px", background: "radial-gradient(circle, #6366f1 0%, transparent 70%)", bottom: "10%", right: "15%" }} />
+    <main className={styles.page}>
+      <section className={styles.brandPanel}>
+        <div className={styles.grid} />
+        <div className={`${styles.orb} ${styles.orbOne}`} />
+        <div className={`${styles.orb} ${styles.orbTwo}`} />
 
-      <Card
-        className="glass-panel"
-        w={420}
-        p="xl"
-        radius="lg"
-        shadow="xl"
-        style={{
-          zIndex: 1,
-          boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
-          border: "1px solid rgba(255, 255, 255, 0.1) !important",
-          background: "rgba(15, 23, 42, 0.65) !important",
-          backdropFilter: "blur(20px)",
-        }}
-      >
-        <Stack gap="lg">
-          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <img src="/logo.png" alt="Ashapura Logo" style={{ height: "50px", objectFit: "contain", marginBottom: "12px" }} />
-            <Title
-              order={1}
-              style={{
-                fontFamily: "Outfit, sans-serif",
-                fontWeight: 900,
-                fontSize: "28px",
-                letterSpacing: "-1px",
-                background: "linear-gradient(135deg, #60a5fa 0%, #a5b4fc 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Ashapura Quotations
-            </Title>
-            <Text c="gray.4" size="xs" mt="xs" style={{ letterSpacing: "0.2px" }}>
-              Sign in to manage DPD &amp; Non-DPD quotations
-            </Text>
+        <div className={styles.brandContent}>
+          <div className={styles.logoWrap}>
+            <img src="/logo.png" alt="Ashapura" className={styles.logo} />
           </div>
 
+          <Box className={styles.message}>
+            <Text className={styles.eyebrow}>Quotation workspace</Text>
+            <Title order={1} className={styles.heroTitle}>
+              From rates to approval,<br />all in one place.
+            </Title>
+            <Text className={styles.heroCopy}>
+              A focused workspace for building, reviewing and delivering professional logistics quotations.
+            </Text>
+
+            <Stack gap="md" mt={34}>
+              {BENEFITS.map((benefit) => (
+                <Group key={benefit} gap="sm" wrap="nowrap">
+                  <ThemeIcon size={25} radius="xl" className={styles.checkIcon}><IconCheck size={14} stroke={2.5} /></ThemeIcon>
+                  <Text className={styles.benefit}>{benefit}</Text>
+                </Group>
+              ))}
+            </Stack>
+          </Box>
+
+          <Text className={styles.copyright}>© {new Date().getFullYear()} Ashapura. Internal business system.</Text>
+        </div>
+      </section>
+
+      <section className={styles.formPanel}>
+        <div className={styles.formWrap}>
+          <div className={styles.mobileLogo}>
+            <img src="/logo.png" alt="Ashapura" />
+          </div>
+
+          <ThemeIcon variant="light" size={46} radius="md" mb="lg"><IconShieldCheck size={24} /></ThemeIcon>
+          <Title order={2} className={styles.formTitle}>Welcome back</Title>
+          <Text c="dimmed" mt={6} mb={30}>Sign in with your company account to continue.</Text>
+
           <form onSubmit={form.onSubmit(handleSubmit)}>
-            <Stack gap="md">
+            <Stack gap="lg">
               <TextInput
-                label={<Text size="xs" fw={600} c="gray.3">Email Address</Text>}
-                placeholder="you@ashapura.com"
-                radius="md"
-                styles={{
-                  input: {
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    color: "#fff",
-                    "&:focus": {
-                      borderColor: "#3b82f6",
-                    }
-                  }
-                }}
+                label="Email address"
+                placeholder="name@company.com"
+                leftSection={<IconMail size={18} />}
+                size="md"
+                autoComplete="email"
+                autoFocus
                 {...form.getInputProps("email")}
               />
               <PasswordInput
-                label={<Text size="xs" fw={600} c="gray.3">Password</Text>}
-                placeholder="Your password"
-                radius="md"
-                styles={{
-                  input: {
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    color: "#fff",
-                    "&:focus": {
-                      borderColor: "#3b82f6",
-                    }
-                  },
-                  innerInput: {
-                    color: "#fff",
-                  }
-                }}
+                label="Password"
+                placeholder="Enter your password"
+                leftSection={<IconLock size={18} />}
+                size="md"
+                autoComplete="current-password"
                 {...form.getInputProps("password")}
               />
               <Button
                 type="submit"
                 loading={submitting}
                 fullWidth
-                mt="md"
-                radius="md"
                 size="md"
-                style={{
-                  background: "linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)",
-                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-                  border: "none",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                }}
+                mt={4}
+                rightSection={!submitting && <IconArrowRight size={18} />}
+                className={styles.submit}
               >
-                Sign in
+                Sign in to workspace
               </Button>
             </Stack>
           </form>
-        </Stack>
-      </Card>
-    </div>
+
+          <Group justify="center" gap={7} mt={30} className={styles.secureNote}>
+            <IconLock size={13} />
+            <Text size="xs" c="dimmed">Secure access · Authorized users only</Text>
+          </Group>
+        </div>
+      </section>
+    </main>
   );
 }
