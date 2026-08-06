@@ -145,14 +145,14 @@ export function CustomFields() {
       <Table striped highlightOnHover verticalSpacing="sm">
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Label</Table.Th>
-            <Table.Th>Type</Table.Th>
+            <Table.Th>Field Name</Table.Th>
+            <Table.Th>Field Type</Table.Th>
             <Table.Th>Required</Table.Th>
-            <Table.Th>Show in PDF</Table.Th>
+            <Table.Th>PDF</Table.Th>
             <Table.Th>Show in List</Table.Th>
             <Table.Th>Show in Filter</Table.Th>
             <Table.Th>Show in Export</Table.Th>
-            <Table.Th>Status</Table.Th>
+            <Table.Th>Active</Table.Th>
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
