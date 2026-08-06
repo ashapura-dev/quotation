@@ -6,7 +6,6 @@ import {
   Center,
   Divider,
   Group,
-  Loader,
   Modal,
   Paper,
   Select,
@@ -49,6 +48,7 @@ import {
   type CustomField,
 } from "../../api/customFields";
 import styles from "./CustomFields.module.css";
+import { DataTable, type DataTableColumn } from "../../components/DataTable";
 
 type FieldType = CustomField["type"];
 type VisibilityKey = "showInPdf" | "showInList" | "showInFilter" | "showInExport";
@@ -145,6 +145,9 @@ export function CustomFields() {
     required: fields.filter((field) => field.required && !field.isDefault).length,
     visible: fields.filter((field) => field.showInPdf).length,
   };
+  const tableColumns: DataTableColumn[] = [
+    "Field", "Type", "Required", "PDF", "List", "Filter", "Export", "Status", "Actions",
+  ].map((header) => ({ key: header, header }));
 
   function handleClose() {
     close();
@@ -249,24 +252,8 @@ export function CustomFields() {
         <Divider />
 
         <Box className={styles.tableWrap}>
-          <Table verticalSpacing="md" horizontalSpacing="lg">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Field</Table.Th>
-                <Table.Th>Type</Table.Th>
-                <Table.Th>Required</Table.Th>
-                <Table.Th>PDF</Table.Th>
-                <Table.Th>List</Table.Th>
-                <Table.Th>Filter</Table.Th>
-                <Table.Th>Export</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th ta="right">Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {query.isPending ? (
-                <Table.Tr><Table.Td colSpan={9}><Center h={220}><Loader /></Center></Table.Td></Table.Tr>
-              ) : filteredFields.length === 0 ? (
+          <DataTable columns={tableColumns} loading={query.isPending} minWidth={1100} verticalSpacing="md">
+              {filteredFields.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={9}>
                     <Center className={styles.emptyState}>
@@ -315,8 +302,7 @@ export function CustomFields() {
                   </Table.Tr>
                 );
               })}
-            </Table.Tbody>
-          </Table>
+          </DataTable>
         </Box>
         {!query.isPending && filteredFields.length > 0 && <Text size="xs" c="dimmed" px="lg" py="md">Showing {filteredFields.length} of {fields.length} fields</Text>}
       </Paper>

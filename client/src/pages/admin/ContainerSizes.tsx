@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title, Tooltip, Loader } from "@mantine/core";
+import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title, Tooltip } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -12,6 +12,7 @@ import {
   updateContainerSize,
   type ContainerSize,
 } from "../../api/containerSizes";
+import { DataTable } from "../../components/DataTable";
 
 export function ContainerSizes() {
   const queryClient = useQueryClient();
@@ -61,26 +62,8 @@ export function ContainerSizes() {
         <Button onClick={openCreate}>Add container size</Button>
       </Group>
 
-      <Table striped highlightOnHover verticalSpacing="sm">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Code</Table.Th>
-            <Table.Th>Label</Table.Th>
-            <Table.Th>Status</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {query.isPending ? (
-            <Table.Tr>
-              <Table.Td colSpan={4} style={{ height: "200px" }}>
-                <Group justify="center" align="center" style={{ height: "100%" }}>
-                  <Loader size="md" />
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ) : (
-            query.data?.map((size) => (
+      <DataTable columns={["Code", "Label", "Status", "Actions"].map((header) => ({ key: header, header }))} loading={query.isPending} minWidth={620}>
+            {query.data?.map((size) => (
               <Table.Tr key={size.id} opacity={size.isActive ? 1 : 0.5}>
                 <Table.Td>{size.code}</Table.Td>
                 <Table.Td>{size.label}</Table.Td>
@@ -100,10 +83,8 @@ export function ContainerSizes() {
                   </Group>
                 </Table.Td>
               </Table.Tr>
-            ))
-          )}
-        </Table.Tbody>
-      </Table>
+            ))}
+      </DataTable>
 
       <Modal opened={opened} onClose={close} title={editing ? "Edit container size" : "Add container size"}>
         <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}>

@@ -10,7 +10,6 @@ import {
   Table,
   TextInput,
   Title,
-  Loader,
 } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
@@ -21,6 +20,7 @@ import { createUser, fetchUsers, setUserActive, updateUser, type User } from "..
 import type { Role } from "../../api/auth";
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { DataTable } from "../../components/DataTable";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "SUPER_ADMIN", label: "Super Admin" },
@@ -93,27 +93,8 @@ export function Users() {
         <Button onClick={open}>New user</Button>
       </Group>
 
-      <Table striped highlightOnHover verticalSpacing="sm">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>Email</Table.Th>
-            <Table.Th>Role</Table.Th>
-            <Table.Th>Status</Table.Th>
-            <Table.Th>Actions</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {usersQuery.isPending ? (
-            <Table.Tr>
-              <Table.Td colSpan={5} style={{ height: "200px" }}>
-                <Group justify="center" align="center" style={{ height: "100%" }}>
-                  <Loader size="md" />
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ) : (
-            usersQuery.data?.map((u: User) => (
+      <DataTable columns={["Name", "Email", "Role", "Status", "Actions"].map((header) => ({ key: header, header }))} loading={usersQuery.isPending} minWidth={760}>
+            {usersQuery.data?.map((u: User) => (
               <Table.Tr key={u.id}>
                 <Table.Td>{u.name}</Table.Td>
                 <Table.Td>{u.email}</Table.Td>
@@ -142,10 +123,8 @@ export function Users() {
                   </Button>
                 </Table.Td>
               </Table.Tr>
-            ))
-          )}
-        </Table.Tbody>
-      </Table>
+            ))}
+      </DataTable>
 
       <Modal opened={opened} onClose={close} title="New user">
         <form onSubmit={form.onSubmit((values) => createMutation.mutate(values))}>
