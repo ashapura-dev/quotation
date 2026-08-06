@@ -1,4 +1,4 @@
-import type { Prisma, QuotationStatus, Role } from "@prisma/client";
+import type { QuotationStatus, Role } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { HttpError } from "../../middleware/errorHandler.js";
 import { notifyRoles, notifyUser } from "../notifications/notifications.service.js";
@@ -21,14 +21,6 @@ const TRANSITIONS: Record<StatusAction, TransitionRule> = {
   clientApprove: { from: "SENT_TO_CLIENT", to: "APPROVED_BY_CLIENT", allowedRoles: ["EMPLOYEE", "TL", "SUPER_ADMIN"], requiresOwnership: false, requiresComment: false },
   clientReject: { from: "SENT_TO_CLIENT", to: "REJECTED_BY_CLIENT", allowedRoles: ["EMPLOYEE", "TL", "SUPER_ADMIN"], requiresOwnership: false, requiresComment: true },
 };
-
-async function snapshotQuotation(tx: Prisma.TransactionClient, quotationId: number) {
-  const full = await tx.quotation.findUniqueOrThrow({
-    where: { id: quotationId },
-    include: { containers: true, lineItems: true },
-  });
-  return JSON.parse(JSON.stringify(full));
-}
 
 export async function applyStatusTransition(
   quotationId: number,
@@ -86,16 +78,6 @@ export async function applyStatusTransition(
         toStatus: targetStatus,
         changedById: user.id,
         comment: comment?.trim() || null,
-      },
-    });
-
-    await tx.quotationRevision.create({
-      data: {
-        quotationId,
-        snapshot: await snapshotQuotation(tx, quotationId),
-        statusAtSnapshot: targetStatus,
-        reason: `status:${action}`,
-        createdById: user.id,
       },
     });
 

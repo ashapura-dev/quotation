@@ -64,8 +64,6 @@ model User {
   createdQuotations   Quotation[]        @relation("QuotationCreatedBy")
   approvedQuotations  Quotation[]        @relation("QuotationApprovedBy")
   statusChanges       QuotationStatusHistory[]
-  revisions           QuotationRevision[]
-  auditLogs           AuditLog[]
   notifications       Notification[]
 
   @@map("users")
@@ -199,14 +197,6 @@ model QuotationNumberSequence {
   @@map("quotation_number_sequences")
 }
 
-model AppSetting {
-  key       String   @id
-  value     String   @db.Text
-  updatedAt DateTime @updatedAt
-
-  @@map("app_settings")
-}
-
 model SmtpSetting {
   id            Int      @id @default(1)
   host          String?
@@ -279,7 +269,6 @@ model Quotation {
   containers      QuotationContainer[]
   lineItems       QuotationLineItem[]
   statusHistory   QuotationStatusHistory[]
-  revisions       QuotationRevision[]
   notifications   Notification[]
 
   @@index([status])
@@ -334,34 +323,6 @@ model QuotationStatusHistory {
   createdAt   DateTime        @default(now())
 
   @@map("quotation_status_history")
-}
-
-model QuotationRevision {
-  id                Int      @id @default(autoincrement())
-  quotationId       Int
-  quotation         Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  snapshot          Json
-  statusAtSnapshot  QuotationStatus
-  reason            String
-  createdById       Int
-  createdBy         User     @relation(fields: [createdById], references: [id])
-  createdAt         DateTime @default(now())
-
-  @@map("quotation_revisions")
-}
-
-model AuditLog {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  entityType String
-  entityId   Int
-  action     String
-  diff       Json?
-  createdAt  DateTime @default(now())
-
-  @@index([entityType, entityId])
-  @@map("audit_logs")
 }
 
 model Notification {

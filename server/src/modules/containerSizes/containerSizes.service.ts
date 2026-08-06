@@ -22,9 +22,3 @@ export function deactivateContainerSize(id: number) {
   return prisma.containerSize.update({ where: { id }, data: { isActive: false } });
 }
 
-export async function reorderContainerSizes(orderedIds: number[]) {
-  await prisma.$transaction(
-    orderedIds.map((id, index) => prisma.containerSize.update({ where: { id }, data: { sortOrder: index } })),
-  );
-  return listContainerSizes(true);
-}

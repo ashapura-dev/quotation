@@ -285,19 +285,6 @@ export async function updateQuotation(id: number, userId: number, role: string, 
         },
       });
 
-      const full = await tx.quotation.findUniqueOrThrow({
-        where: { id },
-        include: { containers: true, lineItems: true },
-      });
-      await tx.quotationRevision.create({
-        data: {
-          quotationId: id,
-          snapshot: JSON.parse(JSON.stringify(full)),
-          statusAtSnapshot: "DRAFT",
-          reason: "post-approval-edit",
-          createdById: userId,
-        },
-      });
     }
   });
 

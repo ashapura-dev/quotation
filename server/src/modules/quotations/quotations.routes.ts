@@ -280,18 +280,6 @@ router.post(
 );
 
 router.get(
-  "/:id/revisions",
-  asyncHandler(async (req, res) => {
-    const revisions = await prisma.quotationRevision.findMany({
-      where: { quotationId: Number(req.params.id) },
-      include: { createdBy: { select: { id: true, name: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json({ revisions });
-  }),
-);
-
-router.get(
   "/:id/pdf",
   asyncHandler(async (req, res) => {
     const templateId = req.query.templateId ? Number(req.query.templateId) : undefined;

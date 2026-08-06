@@ -24,10 +24,6 @@ export function listPdfTemplates(includeInactive = false) {
   });
 }
 
-export function getPdfTemplate(id: number) {
-  return prisma.pdfTemplate.findUniqueOrThrow({ where: { id } });
-}
-
 export function createPdfTemplate(createdById: number, input: PdfTemplateInput & { name: string }, logoPath?: string) {
   return prisma.pdfTemplate.create({ data: { ...input, logoPath, createdById } });
 }

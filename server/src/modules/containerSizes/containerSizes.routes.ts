@@ -6,7 +6,6 @@ import {
   createContainerSize,
   deactivateContainerSize,
   listContainerSizes,
-  reorderContainerSizes,
   updateContainerSize,
 } from "./containerSizes.service.js";
 
@@ -45,16 +44,6 @@ router.delete(
   requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ containerSize: await deactivateContainerSize(Number(req.params.id)) });
-  }),
-);
-
-const reorderSchema = z.object({ orderedIds: z.array(z.number()) });
-
-router.patch(
-  "/reorder",
-  requireRole("SUPER_ADMIN"),
-  asyncHandler(async (req, res) => {
-    res.json({ containerSizes: await reorderContainerSizes(reorderSchema.parse(req.body).orderedIds) });
   }),
 );
 

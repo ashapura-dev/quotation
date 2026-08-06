@@ -175,7 +175,7 @@ All relevant documents or justification to be presented in case if any query is 
 Vehicle Detention: In case of transportation, Rs.2500 per container per day will be applicable if the vehicle is held for more than 24 hours at both port/plant.
 Outside Weighment charges at actual (if required).
 
-Payment terms – Third party complete advance // rest within 15 days from date of Ashapura E-invoice.`,
+Payment terms – Third party complete advance // rest within 15 days from the billing date.`,
   htmlTemplate: "",
   logo: null,
 };
@@ -383,7 +383,7 @@ export function PdfTemplates() {
 
                       <Tabs.Panel value="branding">
                         <Stack gap="xs">
-                          <TextInput label="Template Name" required placeholder="e.g. Standard Invoice" {...form.getInputProps("name")} />
+                          <TextInput label="Template Name" required placeholder="e.g. Standard Quotation" {...form.getInputProps("name")} />
                           <Select
                             label="Quotation Type"
                             placeholder="Universal (both types)"

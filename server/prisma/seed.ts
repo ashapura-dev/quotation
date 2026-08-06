@@ -9,6 +9,16 @@ const prisma = new PrismaClient();
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@ashapura.local";
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "Abcd@1234";
 
+type SeedComponent = {
+  label: string;
+  componentType: "FIXED" | "PER_CONTAINER";
+  fixedValue?: number;
+  percentageValue?: number;
+  isTax?: boolean;
+  sortOrder: number;
+  rates?: Record<string, number>;
+};
+
 async function main() {
   const admin = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
@@ -67,7 +77,7 @@ async function main() {
   });
 
   // Create components for DPD+CFS Nhava Sheva
-  const componentsDpd = [
+  const componentsDpd: SeedComponent[] = [
     { label: "Agency / Handling Charges", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 0 },
     { label: "CFS Charges", componentType: "PER_CONTAINER" as const, sortOrder: 1, rates: { "20FT": 7500, "40FT": 9000 } },
     { label: "CFS Free Days (10 Days)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 2 },
@@ -128,7 +138,7 @@ async function main() {
   });
 
   // Create components for Non-DPD Nhava Sheva
-  const componentsNonDpd = [
+  const componentsNonDpd: SeedComponent[] = [
     { label: "Agency / Handling Charges", componentType: "PER_CONTAINER" as const, sortOrder: 0, rates: { "20FT": 3000, "40FT": 3500 } },
     { label: "CFS Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 1 },
     { label: "CFS Free Days (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 2 },
@@ -172,7 +182,7 @@ All relevant documents or justification to be presented in case if any query is 
 Vehicle Detention: In case of transportation, Rs.2500 per container per day will be applicable if the vehicle is held for more than 24 hours at both port/plant.
 Outside Weighment charges at actual (if required).
 
-Payment terms – Third party complete advance // rest within 15 days from date of Ashapura E-invoice.`;
+Payment terms – Third party complete advance // rest within 15 days from the billing date.`;
 
   const templatePath = path.resolve(process.cwd(), "src/lib/pdf/templates/quotation.hbs");
   const quotationHtml = fs.readFileSync(templatePath, "utf8");

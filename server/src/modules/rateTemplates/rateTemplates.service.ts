@@ -80,63 +80,6 @@ export async function deactivateRateTemplate(id: number) {
 
 // ---------- Components ----------
 
-export async function addComponent(
-  rateTemplateId: number,
-  input: { label: string; componentType: ComponentType; isTax?: boolean; fixedValue?: number; percentageValue?: number },
-) {
-  const maxSort = await prisma.rateTemplateComponent.aggregate({
-    where: { rateTemplateId },
-    _max: { sortOrder: true },
-  });
-  await prisma.rateTemplateComponent.create({
-    data: { rateTemplateId, sortOrder: (maxSort._max.sortOrder ?? -1) + 1, ...input },
-  });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function updateComponent(
-  rateTemplateId: number,
-  componentId: number,
-  input: { label?: string; isTax?: boolean; fixedValue?: number | null; percentageValue?: number | null },
-) {
-  await prisma.rateTemplateComponent.update({ where: { id: componentId }, data: input });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function deleteComponent(rateTemplateId: number, componentId: number) {
-  // Soft-deleted: quotations may still reference this component id for traceability.
-  await prisma.rateTemplateComponent.update({ where: { id: componentId }, data: { isActive: false } });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function reorderComponents(rateTemplateId: number, orderedIds: number[]) {
-  await prisma.$transaction(
-    orderedIds.map((id, index) => prisma.rateTemplateComponent.update({ where: { id }, data: { sortOrder: index } })),
-  );
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function setContainerRate(
-  rateTemplateId: number,
-  componentId: number,
-  containerSizeId: number,
-  rateValue: number,
-) {
-  await prisma.rateTemplateContainerRate.upsert({
-    where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: componentId, containerSizeId } },
-    update: { rateValue },
-    create: { rateTemplateComponentId: componentId, containerSizeId, rateValue },
-  });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function removeContainerRate(rateTemplateId: number, componentId: number, containerSizeId: number) {
-  await prisma.rateTemplateContainerRate.delete({
-    where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: componentId, containerSizeId } },
-  });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
 export interface ComponentSyncInput {
   id?: number;
   label: string;

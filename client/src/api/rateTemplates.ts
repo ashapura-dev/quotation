@@ -40,11 +40,6 @@ export async function fetchRateTemplates(quotationType?: "DPD" | "NON_DPD", incl
   return data.rateTemplates;
 }
 
-export async function fetchRateTemplate(id: number): Promise<RateTemplate> {
-  const { data } = await apiClient.get<{ rateTemplate: RateTemplate }>(`/api/rate-templates/${id}`);
-  return data.rateTemplate;
-}
-
 export async function createRateTemplate(input: { name: string; quotationType: "DPD" | "NON_DPD"; location?: string | null }): Promise<RateTemplate> {
   const { data } = await apiClient.post<{ rateTemplate: RateTemplate }>("/api/rate-templates", input);
   return data.rateTemplate;

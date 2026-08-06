@@ -7,7 +7,6 @@ import { getDefaultTemplateHtml } from "../../lib/pdf/renderer.js";
 import {
   createPdfTemplate,
   deactivatePdfTemplate,
-  getPdfTemplate,
   listPdfTemplates,
   setDefaultPdfTemplate,
   updatePdfTemplate,
@@ -28,13 +27,6 @@ router.get(
   asyncHandler(async (req, res) => {
     const defaultHtml = await getDefaultTemplateHtml();
     res.json({ defaultHtml });
-  }),
-);
-
-router.get(
-  "/:id",
-  asyncHandler(async (req, res) => {
-    res.json({ pdfTemplate: await getPdfTemplate(Number(req.params.id)) });
   }),
 );
 

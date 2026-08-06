@@ -4,7 +4,7 @@ CREATE TABLE `users` (
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `passwordHash` VARCHAR(191) NOT NULL,
-    `role` ENUM('ADMIN', 'STAFF', 'APPROVER') NOT NULL,
+    `role` ENUM('SUPER_ADMIN', 'EMPLOYEE', 'TL') NOT NULL,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `tokenVersion` INTEGER NOT NULL DEFAULT 0,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -54,6 +54,7 @@ CREATE TABLE `rate_templates` (
     `isDefault` BOOLEAN NOT NULL DEFAULT false,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdById` INTEGER NOT NULL,
+    `location` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -65,12 +66,14 @@ CREATE TABLE `rate_template_components` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `rateTemplateId` INTEGER NOT NULL,
     `label` VARCHAR(191) NOT NULL,
-    `componentType` ENUM('FIXED', 'PERCENTAGE', 'PER_CONTAINER') NOT NULL,
+    `componentType` ENUM('FIXED', 'PERCENTAGE', 'PER_CONTAINER', 'TEXT') NOT NULL,
     `isTax` BOOLEAN NOT NULL DEFAULT false,
     `fixedValue` DECIMAL(12, 2) NULL,
     `percentageValue` DECIMAL(5, 2) NULL,
     `sortOrder` INTEGER NOT NULL DEFAULT 0,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `textValue` TEXT NULL,
+    `remark` TEXT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -98,6 +101,7 @@ CREATE TABLE `pdf_templates` (
     `headerHtml` TEXT NULL,
     `footerHtml` TEXT NULL,
     `termsAndConditions` TEXT NULL,
+    `htmlTemplate` TEXT NULL,
     `isDefault` BOOLEAN NOT NULL DEFAULT false,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdById` INTEGER NOT NULL,
@@ -120,15 +124,6 @@ CREATE TABLE `quotation_number_sequences` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `app_settings` (
-    `key` VARCHAR(191) NOT NULL,
-    `value` TEXT NOT NULL,
-    `updatedAt` DATETIME(3) NOT NULL,
-
-    PRIMARY KEY (`key`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `smtp_settings` (
     `id` INTEGER NOT NULL DEFAULT 1,
     `host` VARCHAR(191) NULL,
@@ -148,7 +143,7 @@ CREATE TABLE `quotations` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `quotationNumber` VARCHAR(191) NOT NULL,
     `quotationType` ENUM('DPD', 'NON_DPD') NOT NULL,
-    `status` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT') NOT NULL DEFAULT 'DRAFT',
+    `status` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT_TO_CLIENT', 'APPROVED_BY_CLIENT', 'REJECTED_BY_CLIENT') NOT NULL DEFAULT 'DRAFT',
     `clientId` INTEGER NULL,
     `clientName` VARCHAR(191) NOT NULL,
     `clientAddress` TEXT NULL,
@@ -158,6 +153,14 @@ CREATE TABLE `quotations` (
     `clientEmail` VARCHAR(191) NULL,
     `rateTemplateId` INTEGER NULL,
     `pdfTemplateId` INTEGER NULL,
+    `location` VARCHAR(191) NULL,
+    `route` VARCHAR(191) NULL,
+    `title` VARCHAR(191) NULL,
+    `customFields` JSON NULL,
+    `servicesOffered` VARCHAR(191) NULL,
+    `commodityType` VARCHAR(191) NULL,
+    `containerDetails` VARCHAR(191) NULL,
+    `additionalRemarks` TEXT NULL,
     `subtotal` DECIMAL(12, 2) NOT NULL,
     `taxTotal` DECIMAL(12, 2) NOT NULL,
     `otherAdjustmentsTotal` DECIMAL(12, 2) NOT NULL DEFAULT 0,
@@ -197,7 +200,7 @@ CREATE TABLE `quotation_line_items` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `quotationId` INTEGER NOT NULL,
     `label` VARCHAR(191) NOT NULL,
-    `componentType` ENUM('FIXED', 'PERCENTAGE', 'PER_CONTAINER') NOT NULL,
+    `componentType` ENUM('FIXED', 'PERCENTAGE', 'PER_CONTAINER', 'TEXT') NOT NULL,
     `isTax` BOOLEAN NOT NULL DEFAULT false,
     `fixedValue` DECIMAL(12, 2) NULL,
     `percentageValue` DECIMAL(5, 2) NULL,
@@ -205,6 +208,8 @@ CREATE TABLE `quotation_line_items` (
     `containerBreakdown` JSON NULL,
     `sourceTemplateComponentId` INTEGER NULL,
     `sortOrder` INTEGER NOT NULL DEFAULT 0,
+    `textValue` TEXT NULL,
+    `remark` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
@@ -214,8 +219,8 @@ CREATE TABLE `quotation_line_items` (
 CREATE TABLE `quotation_status_history` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `quotationId` INTEGER NOT NULL,
-    `fromStatus` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT') NOT NULL,
-    `toStatus` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT') NOT NULL,
+    `fromStatus` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT_TO_CLIENT', 'APPROVED_BY_CLIENT', 'REJECTED_BY_CLIENT') NOT NULL,
+    `toStatus` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT_TO_CLIENT', 'APPROVED_BY_CLIENT', 'REJECTED_BY_CLIENT') NOT NULL,
     `changedById` INTEGER NOT NULL,
     `comment` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -224,37 +229,10 @@ CREATE TABLE `quotation_status_history` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `quotation_revisions` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `quotationId` INTEGER NOT NULL,
-    `snapshot` JSON NOT NULL,
-    `statusAtSnapshot` ENUM('DRAFT', 'PENDING', 'APPROVED', 'SENT') NOT NULL,
-    `reason` VARCHAR(191) NOT NULL,
-    `createdById` INTEGER NOT NULL,
-    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `audit_logs` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `userId` INTEGER NOT NULL,
-    `entityType` VARCHAR(191) NOT NULL,
-    `entityId` INTEGER NOT NULL,
-    `action` VARCHAR(191) NOT NULL,
-    `diff` JSON NULL,
-    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    INDEX `audit_logs_entityType_entityId_idx`(`entityType`, `entityId`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `notifications` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `userId` INTEGER NOT NULL,
-    `type` ENUM('SUBMITTED_FOR_REVIEW', 'APPROVED', 'REJECTED', 'SENT') NOT NULL,
+    `type` ENUM('SUBMITTED_FOR_REVIEW', 'APPROVED', 'REJECTED', 'SENT_TO_CLIENT', 'APPROVED_BY_CLIENT', 'REJECTED_BY_CLIENT') NOT NULL,
     `message` VARCHAR(191) NOT NULL,
     `relatedQuotationId` INTEGER NULL,
     `isRead` BOOLEAN NOT NULL DEFAULT false,
@@ -265,38 +243,23 @@ CREATE TABLE `notifications` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `invoices` (
+CREATE TABLE `custom_fields` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `invoiceNumber` VARCHAR(191) NOT NULL,
-    `quotationId` INTEGER NOT NULL,
-    `clientName` VARCHAR(191) NOT NULL,
-    `clientAddress` TEXT NULL,
-    `clientGstin` VARCHAR(191) NULL,
-    `clientContactPerson` VARCHAR(191) NULL,
-    `clientPhone` VARCHAR(191) NULL,
-    `clientEmail` VARCHAR(191) NULL,
-    `subtotal` DECIMAL(12, 2) NOT NULL,
-    `taxTotal` DECIMAL(12, 2) NOT NULL,
-    `grandTotal` DECIMAL(12, 2) NOT NULL,
-    `paymentStatus` ENUM('UNPAID', 'PARTIALLY_PAID', 'PAID') NOT NULL DEFAULT 'UNPAID',
-    `issuedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `dueDate` DATETIME(3) NULL,
-    `createdById` INTEGER NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `label` VARCHAR(191) NOT NULL,
+    `type` VARCHAR(191) NOT NULL,
+    `required` BOOLEAN NOT NULL DEFAULT false,
+    `options` TEXT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `showInPdf` BOOLEAN NOT NULL DEFAULT true,
+    `showInFilter` BOOLEAN NOT NULL DEFAULT true,
+    `showInExport` BOOLEAN NOT NULL DEFAULT true,
+    `showInList` BOOLEAN NOT NULL DEFAULT true,
+    `isDefault` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
-    UNIQUE INDEX `invoices_invoiceNumber_key`(`invoiceNumber`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `invoice_line_items` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `invoiceId` INTEGER NOT NULL,
-    `label` VARCHAR(191) NOT NULL,
-    `amount` DECIMAL(12, 2) NOT NULL,
-    `sortOrder` INTEGER NOT NULL DEFAULT 0,
-
+    UNIQUE INDEX `custom_fields_name_key`(`name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -352,25 +315,7 @@ ALTER TABLE `quotation_status_history` ADD CONSTRAINT `quotation_status_history_
 ALTER TABLE `quotation_status_history` ADD CONSTRAINT `quotation_status_history_changedById_fkey` FOREIGN KEY (`changedById`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `quotation_revisions` ADD CONSTRAINT `quotation_revisions_quotationId_fkey` FOREIGN KEY (`quotationId`) REFERENCES `quotations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `quotation_revisions` ADD CONSTRAINT `quotation_revisions_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `audit_logs` ADD CONSTRAINT `audit_logs_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_relatedQuotationId_fkey` FOREIGN KEY (`relatedQuotationId`) REFERENCES `quotations`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `invoices` ADD CONSTRAINT `invoices_quotationId_fkey` FOREIGN KEY (`quotationId`) REFERENCES `quotations`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `invoices` ADD CONSTRAINT `invoices_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `invoice_line_items` ADD CONSTRAINT `invoice_line_items_invoiceId_fkey` FOREIGN KEY (`invoiceId`) REFERENCES `invoices`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
