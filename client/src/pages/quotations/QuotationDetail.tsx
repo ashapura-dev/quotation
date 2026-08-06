@@ -1,4 +1,5 @@
 import { Badge, Button, Card, Group, Modal, Select, Stack, Table, Text, Textarea, Timeline, Title } from "@mantine/core";
+import { IconDownload, IconEye } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -163,7 +164,10 @@ export function QuotationDetail() {
           </Group>
         </div>
         <Group>
-          <Button component="a" href={quotationPdfUrl(q.id, API_BASE)} target="_blank" variant="light">
+          <Button component="a" href={quotationPdfUrl(q.id, API_BASE)} target="_blank" rel="noreferrer" variant="light" leftSection={<IconEye size={16} />}>
+            Preview PDF
+          </Button>
+          <Button component="a" href={quotationPdfUrl(q.id, API_BASE, undefined, true)} variant="light" leftSection={<IconDownload size={16} />}>
             Download PDF
           </Button>
           <Button

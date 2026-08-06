@@ -106,10 +106,6 @@ router.get(
       quotationType: { header: "Type", width: 10, getValue: (q) => q.quotationType },
       status: { header: "Status", width: 12, getValue: (q) => q.status },
       containers: { header: "Containers", width: 24, getValue: (q) => q.containers.map((c: any) => `${c.containerSizeLabel} x${c.quantity}`).join(", ") },
-      subtotal: { header: "Subtotal", width: 14, getValue: (q) => q.subtotal },
-      taxTotal: { header: "Tax", width: 14, getValue: (q) => q.taxTotal },
-      otherAdjustmentsTotal: { header: "Other Adjustments", width: 16, getValue: (q) => q.otherAdjustmentsTotal },
-      grandTotal: { header: "Grand Total", width: 14, getValue: (q) => q.grandTotal },
       createdBy: { header: "Created By", width: 18, getValue: (q) => q.createdBy?.name },
       approvedBy: { header: "Approved By", width: 18, getValue: (q) => q.approvedBy?.name ?? "-" },
       createdAt: { header: "Created At", width: 20, getValue: (q) => q.createdAt.toISOString() },
@@ -284,8 +280,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const templateId = req.query.templateId ? Number(req.query.templateId) : undefined;
     const { pdfBuffer, quotation } = await generateQuotationPdf(Number(req.params.id), templateId);
+    const disposition = req.query.download === "1" ? "attachment" : "inline";
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="${quotation.quotationNumber.replace(/\//g, "-")}.pdf"`);
+    res.setHeader("Content-Disposition", `${disposition}; filename="${quotation.quotationNumber.replace(/\//g, "-")}.pdf"`);
     res.send(pdfBuffer);
   }),
 );

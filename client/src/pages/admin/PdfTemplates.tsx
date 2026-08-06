@@ -301,7 +301,7 @@ export function PdfTemplates() {
       </Group>
 
       <Grid gutter="md">
-        <Grid.Col span={2}>
+        <Grid.Col span={{ base: 12, md: 3 }}>
           <Paper shadow="xs" radius="md" p="md" withBorder style={{ height: "100%" }}>
             <Group justify="space-between" mb="md" align="center">
               <Text size="xs" fw={700} style={{ letterSpacing: "0.5px", textTransform: "uppercase" }} c="dimmed">Templates List</Text>
@@ -323,7 +323,7 @@ export function PdfTemplates() {
                     transition: "all 0.2s ease",
                     position: "relative",
                     overflow: "hidden",
-                    paddingLeft: "18px",
+                    paddingLeft: "20px",
                   }}
                   onClick={() => selectTemplate(template)}
                 >
@@ -337,12 +337,25 @@ export function PdfTemplates() {
                       backgroundColor: template.primaryColor,
                     }}
                   />
-                  <Group justify="space-between" gap="xs">
-                    <Text fw={selected?.id === template.id ? 700 : 500} size="sm" style={{ color: selected?.id === template.id ? template.primaryColor : "inherit" }}>
+                  <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
+                    <Text
+                      fw={selected?.id === template.id ? 700 : 500}
+                      size="sm"
+                      lineClamp={2}
+                      style={{
+                        color: selected?.id === template.id ? template.primaryColor : "inherit",
+                        minWidth: 0,
+                        lineHeight: 1.35,
+                      }}
+                    >
                       {template.name}
                     </Text>
                     {template.isDefault && (
-                      <Badge size="xs" variant="filled" style={{ backgroundColor: template.primaryColor }}>
+                      <Badge
+                        size="xs"
+                        variant="filled"
+                        style={{ backgroundColor: template.primaryColor, flexShrink: 0 }}
+                      >
                         Default
                       </Badge>
                     )}
@@ -356,7 +369,7 @@ export function PdfTemplates() {
           </Paper>
         </Grid.Col>
 
-        <Grid.Col span={10}>
+        <Grid.Col span={{ base: 12, md: 9 }}>
           <Grid gutter="md">
             <Grid.Col span={5}>
               <Card shadow="xs" radius="md" p="md" withBorder style={{ height: "100%" }}>

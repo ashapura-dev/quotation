@@ -318,7 +318,11 @@ export function QuotationList() {
                     <TextInput
                       placeholder={`Search…`}
                       value={customFieldFilters[f.name] || ""}
-                      onChange={(e) => { setCustomFieldFilters((p) => ({ ...p, [f.name]: e.currentTarget.value })); setPage(1); }}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        setCustomFieldFilters((p) => ({ ...p, [f.name]: value }));
+                        setPage(1);
+                      }}
                       styles={inputStyles}
                       size="xs"
                     />
@@ -389,7 +393,7 @@ export function QuotationList() {
 
           {/* Centre: client search — always visible */}
           <TextInput
-            placeholder="Search by client name…"
+            placeholder="Search number or client name..."
             leftSection={<IconSearch size={16} />}
             value={search}
             onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
@@ -405,10 +409,6 @@ export function QuotationList() {
                 filters,
                 [
                   "containers",
-                  "subtotal",
-                  "taxTotal",
-                  "otherAdjustmentsTotal",
-                  "grandTotal",
                   ...(customFieldsQuery.data?.filter((field) => field.showInExport).map((field) => field.name) || []),
                 ],
                 API_BASE

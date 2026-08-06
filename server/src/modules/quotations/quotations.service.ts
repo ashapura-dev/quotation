@@ -376,7 +376,12 @@ function parseQueryValue(val: any) {
 
 function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
   const where: Prisma.QuotationWhereInput = { isDeleted: false };
-  if (filters.search) where.clientName = { contains: filters.search };
+  if (filters.search) {
+    where.OR = [
+      { quotationNumber: { contains: filters.search } },
+      { clientName: { contains: filters.search } },
+    ];
+  }
   if (filters.status) where.status = filters.status as QuotationStatus;
   if (filters.quotationType) where.quotationType = filters.quotationType as QuotationType;
   if (filters.containerSizeId) where.containers = { some: { containerSizeId: filters.containerSizeId } };
@@ -388,6 +393,7 @@ function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
   }
 
   const DEFAULT_FIELD_NAMES = [
+    "clientName",
     "location",
     "route",
     "title",
@@ -413,7 +419,7 @@ function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
           const parsedVal = parseQueryValue(val);
           andArray.push({
             customFields: {
-              path: [key],
+              path: `$.${key}`,
               equals: parsedVal,
             }
           });

@@ -107,9 +107,12 @@ export async function deleteQuotation(id: number): Promise<void> {
   await apiClient.delete(`/api/quotations/${id}`);
 }
 
-export function quotationPdfUrl(id: number, apiBase: string, templateId?: number | null): string {
-  const params = templateId ? `?templateId=${templateId}` : "";
-  return `${apiBase}/api/quotations/${id}/pdf${params}`;
+export function quotationPdfUrl(id: number, apiBase: string, templateId?: number | null, download = false): string {
+  const params = new URLSearchParams();
+  if (templateId) params.set("templateId", String(templateId));
+  if (download) params.set("download", "1");
+  const query = params.toString();
+  return `${apiBase}/api/quotations/${id}/pdf${query ? `?${query}` : ""}`;
 }
 
 export async function emailQuotation(id: number, input: { templateId?: number | null; toAddress?: string }): Promise<{ sentTo: string }> {
