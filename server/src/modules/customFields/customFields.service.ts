@@ -21,6 +21,7 @@ export async function createCustomField(input: {
   type: string;
   required?: boolean;
   options?: string | null;
+  showInPdf?: boolean;
 }) {
   const name = slugify(input.label);
   if (!name) {
@@ -42,6 +43,7 @@ export async function createCustomField(input: {
           required: input.required ?? false,
           options: input.options ?? null,
           isActive: true,
+          showInPdf: input.showInPdf ?? true,
         },
       });
     }
@@ -55,6 +57,7 @@ export async function createCustomField(input: {
       type: input.type,
       required: input.required ?? false,
       options: input.options ?? null,
+      showInPdf: input.showInPdf ?? true,
     },
   });
 }
@@ -67,6 +70,7 @@ export async function updateCustomField(
     required?: boolean;
     options?: string | null;
     isActive?: boolean;
+    showInPdf?: boolean;
   }
 ) {
   const field = await prisma.customField.findUnique({ where: { id } });
@@ -78,6 +82,7 @@ export async function updateCustomField(
     required: input.required,
     options: input.options,
     isActive: input.isActive,
+    showInPdf: input.showInPdf,
   };
 
   if (input.label && input.label !== field.label) {

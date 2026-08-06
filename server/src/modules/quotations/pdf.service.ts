@@ -27,7 +27,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
   const quotation = await getQuotation(quotationId);
   const template = await resolvePdfTemplate(quotation.pdfTemplateId, quotation.quotationType, requestedTemplateId);
 
-  const allFields = await prisma.customField.findMany();
+  const allFields = await prisma.customField.findMany({ where: { showInPdf: true } });
   const customFieldsData = allFields
     .map((f) => {
       const val = (quotation.customFields as any)?.[f.name];

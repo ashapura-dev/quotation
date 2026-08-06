@@ -318,13 +318,25 @@ export function PdfTemplates() {
                   style={{
                     cursor: "pointer",
                     borderColor: selected?.id === template.id ? template.primaryColor : undefined,
-                    borderLeft: `4px solid ${template.primaryColor}`,
                     boxShadow: (selected?.id === template.id || hoveredId === template.id) ? "0 6px 12px rgba(0, 0, 0, 0.05)" : "0 1px 2px rgba(0,0,0,0.01)",
                     transform: (selected?.id === template.id || hoveredId === template.id) ? "translateY(-2px)" : "translateY(0)",
                     transition: "all 0.2s ease",
+                    position: "relative",
+                    overflow: "hidden",
+                    paddingLeft: "18px",
                   }}
                   onClick={() => selectTemplate(template)}
                 >
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: "6px",
+                      backgroundColor: template.primaryColor,
+                    }}
+                  />
                   <Group justify="space-between" gap="xs">
                     <Text fw={selected?.id === template.id ? 700 : 500} size="sm" style={{ color: selected?.id === template.id ? template.primaryColor : "inherit" }}>
                       {template.name}

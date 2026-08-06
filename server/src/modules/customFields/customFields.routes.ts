@@ -26,6 +26,7 @@ const createSchema = z.object({
   type: z.enum(["TEXT", "NUMBER", "BOOLEAN", "SELECT"]),
   required: z.boolean().optional(),
   options: z.string().nullable().optional(),
+  showInPdf: z.boolean().optional(),
 });
 
 router.post(
@@ -42,6 +43,7 @@ const updateSchema = z.object({
   required: z.boolean().optional(),
   options: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
+  showInPdf: z.boolean().optional(),
 });
 
 router.put(

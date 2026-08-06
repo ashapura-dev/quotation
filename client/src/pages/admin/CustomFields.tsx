@@ -30,6 +30,7 @@ export function CustomFields() {
       required: false,
       options: "",
       isActive: true,
+      showInPdf: true,
     },
   });
 
@@ -41,6 +42,7 @@ export function CustomFields() {
         required: values.required,
         options: values.type === "SELECT" ? values.options : null,
         isActive: values.isActive,
+        showInPdf: values.showInPdf,
       };
       return editing ? updateCustomField(editing.id, payload) : createCustomField(payload);
     },
@@ -71,6 +73,7 @@ export function CustomFields() {
       required: false,
       options: "",
       isActive: true,
+      showInPdf: true,
     });
     setNewOption("");
     setOptionsList([]);
@@ -85,6 +88,7 @@ export function CustomFields() {
       required: field.required,
       options: field.options ?? "",
       isActive: field.isActive,
+      showInPdf: field.showInPdf,
     });
     const opts = field.options ? field.options.split(",").map(o => o.trim()).filter(Boolean) : [];
     setOptionsList(opts);
@@ -123,6 +127,7 @@ export function CustomFields() {
             <Table.Th>Type</Table.Th>
             <Table.Th>Required</Table.Th>
             <Table.Th>Options</Table.Th>
+            <Table.Th>Show in PDF</Table.Th>
             <Table.Th>Status</Table.Th>
             <Table.Th />
           </Table.Tr>
@@ -135,6 +140,7 @@ export function CustomFields() {
               <Table.Td>{field.type}</Table.Td>
               <Table.Td>{field.required ? "Yes" : "No"}</Table.Td>
               <Table.Td>{field.type === "SELECT" ? field.options || "-" : "-"}</Table.Td>
+              <Table.Td>{field.showInPdf ? "Yes" : "No"}</Table.Td>
               <Table.Td>{field.isActive ? "Active" : "Inactive"}</Table.Td>
               <Table.Td>
                 <Group gap="xs">
@@ -230,6 +236,13 @@ export function CustomFields() {
               label="Required Field"
               checked={form.values.required}
               onChange={(event) => form.setFieldValue("required", event.currentTarget.checked)}
+              mt="xs"
+            />
+
+            <Switch
+              label="Show in PDF Template"
+              checked={form.values.showInPdf}
+              onChange={(event) => form.setFieldValue("showInPdf", event.currentTarget.checked)}
               mt="xs"
             />
 
