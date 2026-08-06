@@ -231,6 +231,8 @@ Payment terms – Third party complete advance // rest within 15 days from the b
       update: {
         isDefault: true,
         required: field.required ?? false,
+        showInFilter: true,
+        showInList: true,
       },
       create: {
         name: field.name,
@@ -240,9 +242,9 @@ Payment terms – Third party complete advance // rest within 15 days from the b
         isDefault: true,
         isActive: true,
         showInPdf: true,
-        showInFilter: false,
+        showInFilter: true,
         showInExport: true,
-        showInList: false,
+        showInList: true,
       },
     });
   }
