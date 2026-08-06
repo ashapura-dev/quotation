@@ -9,7 +9,7 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background-color: #f8fafc;
+  background: radial-gradient(circle at top right, rgba(239, 246, 255, 0.4) 0%, rgba(248, 250, 252, 1) 100%) !important;
 }
 
 body {
@@ -63,4 +63,94 @@ body {
   filter: blur(80px);
   animation: pulseGlow 8s infinite ease-in-out;
   z-index: 0;
+}
+
+/* Premium Table Styling */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  border: 1px solid rgba(203, 213, 225, 0.6) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background-color: #fff !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 16px -8px rgba(0, 0, 0, 0.02) !important;
+}
+
+th {
+  color: #fff !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  letter-spacing: 1px !important;
+  padding: 16px 18px !important;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  text-align: left;
+  border-bottom: none !important;
+}
+
+td {
+  padding: 16px 18px !important;
+  font-size: 13.5px !important;
+  color: #334155 !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  border-right: 1px solid rgba(226, 232, 240, 0.4) !important;
+}
+
+td:last-child {
+  border-right: none !important;
+}
+
+tr:last-child td {
+  border-bottom: none !important;
+}
+
+tbody tr {
+  transition: all 0.2s ease !important;
+}
+
+/* Subtle striped styling */
+tbody tr:nth-of-type(even) {
+  background-color: rgba(248, 250, 252, 0.5) !important;
+}
+
+tbody tr:hover {
+  background-color: rgba(239, 246, 255, 0.7) !important;
+  transform: translateY(-0.5px);
+  box-shadow: inset 3px 0 0 #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.04) !important;
+}
+
+/* Premium Sidebar Active Navigation Items */
+a.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%) !important;
+  color: #1d4ed8 !important;
+  border-left: 3px solid #2563eb !important;
+  font-weight: 600 !important;
+}
+
+/* Form Input Glows */
+.mantine-Input-input:focus,
+.mantine-TextInput-input:focus,
+.mantine-Select-input:focus,
+.mantine-NumberInput-input:focus,
+.mantine-Textarea-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+  transition: all 0.2s ease;
+}
+
+/* Button Micro-Animations */
+button:not([disabled]) {
+  transition: all 0.2s ease-in-out !important;
+}
+
+button:not([disabled]):hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+
+button:not([disabled]):active {
+  transform: translateY(0);
 }

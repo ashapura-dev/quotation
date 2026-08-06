@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title, Loader } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -67,20 +67,30 @@ export function Clients() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {query.data?.map((client) => (
-            <Table.Tr key={client.id}>
-              <Table.Td>{client.name}</Table.Td>
-              <Table.Td>{client.contactPerson}</Table.Td>
-              <Table.Td>{client.phone}</Table.Td>
-              <Table.Td>{client.email}</Table.Td>
-              <Table.Td>{client.gstin}</Table.Td>
-              <Table.Td>
-                <ActionIcon variant="subtle" onClick={() => openEdit(client)}>
-                  <IconPencil size={16} />
-                </ActionIcon>
+          {query.isPending ? (
+            <Table.Tr>
+              <Table.Td colSpan={6} style={{ height: "200px" }}>
+                <Group justify="center" align="center" style={{ height: "100%" }}>
+                  <Loader size="md" />
+                </Group>
               </Table.Td>
             </Table.Tr>
-          ))}
+          ) : (
+            query.data?.map((client) => (
+              <Table.Tr key={client.id}>
+                <Table.Td>{client.name}</Table.Td>
+                <Table.Td>{client.contactPerson}</Table.Td>
+                <Table.Td>{client.phone}</Table.Td>
+                <Table.Td>{client.email}</Table.Td>
+                <Table.Td>{client.gstin}</Table.Td>
+                <Table.Td>
+                  <ActionIcon variant="subtle" onClick={() => openEdit(client)}>
+                    <IconPencil size={16} />
+                  </ActionIcon>
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
         </Table.Tbody>
       </Table>
 

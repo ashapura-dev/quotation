@@ -1,9 +1,23 @@
-import { Card, Group, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Card, Group, SimpleGrid, Text, Title } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardSummary } from "../api/dashboard";
 import { useAuth } from "../hooks/useAuth";
 import {
+  IconFileDescription,
+  IconClock,
+  IconCircleCheck,
+  IconSend,
+  IconDiscountCheck,
+  IconCircleX,
+  IconPercentage,
+  IconHourglass,
+} from "@tabler/icons-react";
+
+export function Dashboard() {
+  const { user } = useAuth();
+  const { data } = useQuery({ queryKey: ["dashboard-summary"], queryFn: fetchDashboardSummary });
+
   const typeData = data
     ? [
         { name: "DPD", value: data.typeCounts.DPD, color: "#2563eb" },

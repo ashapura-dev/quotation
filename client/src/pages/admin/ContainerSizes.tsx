@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title, Tooltip } from "@mantine/core";
+import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title, Tooltip, Loader } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -71,27 +71,37 @@ export function ContainerSizes() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {query.data?.map((size) => (
-            <Table.Tr key={size.id} opacity={size.isActive ? 1 : 0.5}>
-              <Table.Td>{size.code}</Table.Td>
-              <Table.Td>{size.label}</Table.Td>
-              <Table.Td>{size.isActive ? "Active" : "Inactive"}</Table.Td>
-              <Table.Td>
-                <Group gap="xs">
-                  <ActionIcon variant="subtle" onClick={() => openEdit(size)}>
-                    <IconPencil size={16} />
-                  </ActionIcon>
-                  {size.isActive && (
-                    <Tooltip label="Deactivate">
-                      <ActionIcon variant="subtle" color="red" onClick={() => deactivateMutation.mutate(size.id)}>
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
+          {query.isPending ? (
+            <Table.Tr>
+              <Table.Td colSpan={4} style={{ height: "200px" }}>
+                <Group justify="center" align="center" style={{ height: "100%" }}>
+                  <Loader size="md" />
                 </Group>
               </Table.Td>
             </Table.Tr>
-          ))}
+          ) : (
+            query.data?.map((size) => (
+              <Table.Tr key={size.id} opacity={size.isActive ? 1 : 0.5}>
+                <Table.Td>{size.code}</Table.Td>
+                <Table.Td>{size.label}</Table.Td>
+                <Table.Td>{size.isActive ? "Active" : "Inactive"}</Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <ActionIcon variant="subtle" onClick={() => openEdit(size)}>
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                    {size.isActive && (
+                      <Tooltip label="Deactivate">
+                        <ActionIcon variant="subtle" color="red" onClick={() => deactivateMutation.mutate(size.id)}>
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
         </Table.Tbody>
       </Table>
 

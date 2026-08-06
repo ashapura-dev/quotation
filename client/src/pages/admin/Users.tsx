@@ -10,6 +10,7 @@ import {
   Table,
   TextInput,
   Title,
+  Loader,
 } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
@@ -103,36 +104,46 @@ export function Users() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {usersQuery.data?.map((u: User) => (
-            <Table.Tr key={u.id}>
-              <Table.Td>{u.name}</Table.Td>
-              <Table.Td>{u.email}</Table.Td>
-              <Table.Td>
-                <Select
-                  data={ROLE_OPTIONS}
-                  value={u.role}
-                  disabled={u.id === currentUser?.id}
-                  onChange={(value) => value && roleMutation.mutate({ id: u.id, role: value as Role })}
-                  w={140}
-                />
-              </Table.Td>
-              <Table.Td>
-                <Group gap="xs">
-                  <Badge color={u.isActive ? "green" : "gray"}>{u.isActive ? "Active" : "Inactive"}</Badge>
-                  <Switch
-                    checked={u.isActive}
-                    disabled={u.id === currentUser?.id}
-                    onChange={(e) => statusMutation.mutate({ id: u.id, isActive: e.currentTarget.checked })}
-                  />
+          {usersQuery.isPending ? (
+            <Table.Tr>
+              <Table.Td colSpan={5} style={{ height: "200px" }}>
+                <Group justify="center" align="center" style={{ height: "100%" }}>
+                  <Loader size="md" />
                 </Group>
               </Table.Td>
-              <Table.Td>
-                <Button size="xs" variant="light" onClick={() => setSelectedUserForPassword(u)}>
-                  Change Password
-                </Button>
-              </Table.Td>
             </Table.Tr>
-          ))}
+          ) : (
+            usersQuery.data?.map((u: User) => (
+              <Table.Tr key={u.id}>
+                <Table.Td>{u.name}</Table.Td>
+                <Table.Td>{u.email}</Table.Td>
+                <Table.Td>
+                  <Select
+                    data={ROLE_OPTIONS}
+                    value={u.role}
+                    disabled={u.id === currentUser?.id}
+                    onChange={(value) => value && roleMutation.mutate({ id: u.id, role: value as Role })}
+                    w={140}
+                  />
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <Badge color={u.isActive ? "green" : "gray"}>{u.isActive ? "Active" : "Inactive"}</Badge>
+                    <Switch
+                      checked={u.isActive}
+                      disabled={u.id === currentUser?.id}
+                      onChange={(e) => statusMutation.mutate({ id: u.id, isActive: e.currentTarget.checked })}
+                    />
+                  </Group>
+                </Table.Td>
+                <Table.Td>
+                  <Button size="xs" variant="light" onClick={() => setSelectedUserForPassword(u)}>
+                    Change Password
+                  </Button>
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
         </Table.Tbody>
       </Table>
 

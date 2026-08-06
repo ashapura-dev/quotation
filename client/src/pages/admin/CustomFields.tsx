@@ -1,4 +1,4 @@
-import { ActionIcon, Badge, Button, Card, Group, Modal, Select, Stack, Switch, Table, Text, TextInput, Title, Tooltip } from "@mantine/core";
+import { ActionIcon, Badge, Button, Card, Group, Modal, Select, Stack, Switch, Table, Text, TextInput, Title, Tooltip, Loader } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -133,37 +133,47 @@ export function CustomFields() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {query.data?.map((field) => (
-            <Table.Tr key={field.id}>
-              <Table.Td fw={500}>{field.label}</Table.Td>
-              <Table.Td style={{ fontFamily: "monospace", fontSize: "12px" }}>{field.name}</Table.Td>
-              <Table.Td>{field.type}</Table.Td>
-              <Table.Td>{field.required ? "Yes" : "No"}</Table.Td>
-              <Table.Td>{field.type === "SELECT" ? field.options || "-" : "-"}</Table.Td>
-              <Table.Td>{field.showInPdf ? "Yes" : "No"}</Table.Td>
-              <Table.Td>{field.isActive ? "Active" : "Inactive"}</Table.Td>
-              <Table.Td>
-                <Group gap="xs">
-                  <ActionIcon variant="subtle" onClick={() => openEdit(field)}>
-                    <IconPencil size={16} />
-                  </ActionIcon>
-                  <Tooltip label="Delete">
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete the custom field "${field.label}"?`)) {
-                          deleteMutation.mutate(field.id);
-                        }
-                      }}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Tooltip>
+          {query.isPending ? (
+            <Table.Tr>
+              <Table.Td colSpan={8} style={{ height: "200px" }}>
+                <Group justify="center" align="center" style={{ height: "100%" }}>
+                  <Loader size="md" />
                 </Group>
               </Table.Td>
             </Table.Tr>
-          ))}
+          ) : (
+            query.data?.map((field) => (
+              <Table.Tr key={field.id}>
+                <Table.Td fw={500}>{field.label}</Table.Td>
+                <Table.Td style={{ fontFamily: "monospace", fontSize: "12px" }}>{field.name}</Table.Td>
+                <Table.Td>{field.type}</Table.Td>
+                <Table.Td>{field.required ? "Yes" : "No"}</Table.Td>
+                <Table.Td>{field.type === "SELECT" ? field.options || "-" : "-"}</Table.Td>
+                <Table.Td>{field.showInPdf ? "Yes" : "No"}</Table.Td>
+                <Table.Td>{field.isActive ? "Active" : "Inactive"}</Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <ActionIcon variant="subtle" onClick={() => openEdit(field)}>
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                    <Tooltip label="Delete">
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete the custom field "${field.label}"?`)) {
+                            deleteMutation.mutate(field.id);
+                          }
+                        }}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
         </Table.Tbody>
       </Table>
 

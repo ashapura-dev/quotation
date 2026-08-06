@@ -10,6 +10,7 @@ import {
   TextInput,
   Title,
   Tooltip,
+  Loader,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -43,6 +44,7 @@ export function QuotationList() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const filters: QuotationFilters = {
     search: debouncedSearch || undefined,
@@ -51,7 +53,7 @@ export function QuotationList() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     page,
-    pageSize: 10,
+    pageSize,
   };
 
   const query = useQuery({ queryKey: ["quotations", filters], queryFn: () => fetchQuotations(filters) });
@@ -161,41 +163,51 @@ export function QuotationList() {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {query.data?.quotations.map((q) => {
-            const canDelete =
-              user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
-            return (
-              <Table.Tr key={q.id}>
-                <Table.Td style={{ cursor: "pointer" }} onClick={() => navigate(`/quotations/${q.id}`)}>
-                  {q.quotationNumber}
-                </Table.Td>
-                <Table.Td>{q.clientName}</Table.Td>
-                <Table.Td>{q.quotationType}</Table.Td>
-                <Table.Td>
-                  <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
-                </Table.Td>
-                <Table.Td>{q.grandTotal.toFixed(2)}</Table.Td>
-                <Table.Td>{q.createdBy?.name}</Table.Td>
-                <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
-                <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
-                <Table.Td>
-                  {canDelete && (
-                    <Tooltip label="Delete">
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => {
-                          if (confirm(`Delete quotation ${q.quotationNumber}?`)) deleteMutation.mutate(q.id);
-                        }}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </Table.Td>
-              </Table.Tr>
-            );
-          })}
+          {query.isPending ? (
+            <Table.Tr>
+              <Table.Td colSpan={9} style={{ height: "200px" }}>
+                <Group justify="center" align="center" style={{ height: "100%" }}>
+                  <Loader size="md" />
+                </Group>
+              </Table.Td>
+            </Table.Tr>
+          ) : (
+            query.data?.quotations.map((q) => {
+              const canDelete =
+                user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
+              return (
+                <Table.Tr key={q.id}>
+                  <Table.Td style={{ cursor: "pointer" }} onClick={() => navigate(`/quotations/${q.id}`)}>
+                    {q.quotationNumber}
+                  </Table.Td>
+                  <Table.Td>{q.clientName}</Table.Td>
+                  <Table.Td>{q.quotationType}</Table.Td>
+                  <Table.Td>
+                    <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
+                  </Table.Td>
+                  <Table.Td>{q.grandTotal.toFixed(2)}</Table.Td>
+                  <Table.Td>{q.createdBy?.name}</Table.Td>
+                  <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
+                  <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
+                  <Table.Td>
+                    {canDelete && (
+                      <Tooltip label="Delete">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => {
+                            if (confirm(`Delete quotation ${q.quotationNumber}?`)) deleteMutation.mutate(q.id);
+                          }}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                  </Table.Td>
+                </Table.Tr>
+              );
+            })
+          )}
         </Table.Tbody>
       </Table>
 
@@ -205,9 +217,35 @@ export function QuotationList() {
         </Text>
       )}
 
-      {totalPages > 1 && (
-        <Group justify="center" mt="lg">
-          <Pagination value={page} onChange={setPage} total={totalPages} />
+      {query.data && query.data.total > 0 && (
+        <Group justify="space-between" align="center" mt="lg" style={{ borderTop: "1px solid rgba(0, 0, 0, 0.05)", paddingTop: "16px" }}>
+          <Text size="xs" c="dimmed">
+            Showing {Math.min(query.data.total, (page - 1) * pageSize + 1)} - {Math.min(query.data.total, page * pageSize)} of {query.data.total} quotations
+          </Text>
+          <Group gap="md">
+            {totalPages > 1 && (
+              <Pagination value={page} onChange={setPage} total={totalPages} size="sm" />
+            )}
+            <Group gap="xs" align="center">
+              <Text size="xs" c="dimmed">Show</Text>
+              <Select
+                value={String(pageSize)}
+                onChange={(val) => {
+                  if (val) {
+                    setPageSize(Number(val));
+                    setPage(1);
+                  }
+                }}
+                data={[
+                  { value: "10", label: "10 per page" },
+                  { value: "15", label: "15 per page" },
+                  { value: "20", label: "20 per page" },
+                ]}
+                w={120}
+                size="xs"
+              />
+            </Group>
+          </Group>
         </Group>
       )}
     </div>
