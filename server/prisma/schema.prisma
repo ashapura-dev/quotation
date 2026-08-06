@@ -24,6 +24,7 @@ enum ComponentType {
   FIXED
   PERCENTAGE
   PER_CONTAINER
+  PER_CONTAINER_TEXT
   TEXT
 }
 
@@ -153,6 +154,7 @@ model RateTemplateContainerRate {
   containerSizeId         Int
   containerSize           ContainerSize         @relation(fields: [containerSizeId], references: [id])
   rateValue               Decimal               @db.Decimal(12, 2)
+  textValue               String?               @db.Text
 
   @@unique([rateTemplateComponentId, containerSizeId])
   @@map("rate_template_container_rates")

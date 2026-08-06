@@ -28,6 +28,7 @@ type Row = RateComponent & { _key: string };
 const TYPE_OPTIONS = [
   { value: "FIXED", label: "Fixed amount" },
   { value: "PER_CONTAINER", label: "Per container" },
+  { value: "PER_CONTAINER_TEXT", label: "Per container (text)" },
   { value: "TEXT", label: "Text" },
 ];
 
@@ -77,12 +78,12 @@ export function DynamicComponentBuilder({ initialComponents, containerSizes, onC
     commit(rows.filter((r) => r._key !== key));
   }
 
-  function setContainerRate(key: string, containerSizeId: number, rateValue: number) {
+  function setContainerRate(key: string, containerSizeId: number, rateValue: number, textValue?: string) {
     commit(
       rows.map((r) => {
         if (r._key !== key) return r;
         const existing = r.containerRates.filter((cr) => Number(cr.containerSizeId) !== containerSizeId);
-        return { ...r, containerRates: [...existing, { containerSizeId, rateValue }] };
+        return { ...r, containerRates: [...existing, { containerSizeId, rateValue, textValue }] };
       }),
     );
   }
@@ -107,7 +108,7 @@ export function DynamicComponentBuilder({ initialComponents, containerSizes, onC
                 containerSizes={containerSizes}
                 onUpdate={(patch) => updateRow(row._key, patch)}
                 onRemove={() => removeRow(row._key)}
-                onSetContainerRate={(sizeId, value) => setContainerRate(row._key, sizeId, value)}
+                onSetContainerRate={(sizeId, value, text) => setContainerRate(row._key, sizeId, value, text)}
               />
             ))}
           </Stack>
@@ -137,7 +138,7 @@ function ComponentRow({
   containerSizes: ContainerSize[];
   onUpdate: (patch: Partial<Row>) => void;
   onRemove: () => void;
-  onSetContainerRate: (containerSizeId: number, rateValue: number) => void;
+  onSetContainerRate: (containerSizeId: number, rateValue: number, textValue?: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row._key });
 
@@ -195,7 +196,7 @@ function ComponentRow({
           </ActionIcon>
         </Group>
 
-        {row.componentType === "PER_CONTAINER" && (
+        {(row.componentType === "PER_CONTAINER" || row.componentType === "PER_CONTAINER_TEXT") && (
           <Table withTableBorder={false} verticalSpacing={4}>
             <Table.Thead>
               <Table.Tr>
@@ -210,13 +211,21 @@ function ComponentRow({
                   const rate = row.containerRates.find((r) => Number(r.containerSizeId) === size.id);
                   return (
                     <Table.Td key={size.id}>
-                      <NumberInput
-                        placeholder="Rate"
-                        value={rate?.rateValue ?? ""}
-                        onChange={(value) => onSetContainerRate(size.id, Number(value) || 0)}
-                        decimalScale={2}
-                        min={0}
-                      />
+                      {row.componentType === "PER_CONTAINER" ? (
+                        <NumberInput
+                          placeholder="Rate"
+                          value={rate?.rateValue ?? ""}
+                          onChange={(value) => onSetContainerRate(size.id, Number(value) || 0, rate?.textValue ?? undefined)}
+                          decimalScale={2}
+                          min={0}
+                        />
+                      ) : (
+                        <TextInput
+                          placeholder="Text"
+                          value={rate?.textValue ?? ""}
+                          onChange={(event) => onSetContainerRate(size.id, rate?.rateValue ?? 0, event.currentTarget.value)}
+                        />
+                      )}
                     </Table.Td>
                   );
                 })}

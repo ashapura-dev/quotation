@@ -5,6 +5,7 @@ export interface ContainerRate {
   id?: number;
   containerSizeId: number;
   rateValue: number;
+  textValue?: string | null;
 }
 
 export interface RateComponent {

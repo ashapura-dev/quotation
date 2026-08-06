@@ -71,11 +71,11 @@ router.post(
 const syncComponentSchema = z.object({
   id: z.number().optional(),
   label: z.string().min(1),
-  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "TEXT"]),
+  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "PER_CONTAINER_TEXT", "TEXT"]),
   isTax: z.boolean(),
   fixedValue: z.number().nullable().optional(),
   percentageValue: z.number().nullable().optional(),
-  containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number() })).optional(),
+  containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number(), textValue: z.string().nullable().optional() })).optional(),
   textValue: z.string().nullable().optional(),
   remark: z.string().nullable().optional(),
 });

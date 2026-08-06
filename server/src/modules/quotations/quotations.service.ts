@@ -17,7 +17,7 @@ export interface QuotationComponentInput {
   isTax: boolean;
   fixedValue?: number | null;
   percentageValue?: number | null;
-  containerRates?: { containerSizeId: number; rateValue: number }[];
+  containerRates?: { containerSizeId: number; rateValue: number; textValue?: string | null }[];
   sourceTemplateComponentId?: number | null;
   textValue?: string | null;
   remark?: string | null;
@@ -56,9 +56,10 @@ function toCalcInputs(input: QuotationInput, allSizes: any[]): { components: Com
     sortOrder: i,
     fixedValue: c.fixedValue ?? undefined,
     percentageValue: c.percentageValue ?? undefined,
-    containerRates: (c.containerRates ?? []).map((r) => ({
-      containerSizeId: String(r.containerSizeId),
-      rateValue: r.rateValue,
+      containerRates: (c.containerRates ?? []).map((r) => ({
+        containerSizeId: String(r.containerSizeId),
+        rateValue: r.rateValue,
+        textValue: r.textValue ?? undefined,
     })),
     textValue: c.textValue ?? undefined,
   }));

@@ -12,7 +12,7 @@ export interface QuotationContainer {
 
 export interface QuotationLineItem extends RateComponent {
   computedAmount: number;
-  containerBreakdown?: { containerSizeId: number; label: string; quantity: number; rate: number; lineTotal: number }[];
+  containerBreakdown?: { containerSizeId: number; label: string; quantity: number; rate: number; lineTotal: number; textValue?: string }[];
 }
 
 export interface Quotation {

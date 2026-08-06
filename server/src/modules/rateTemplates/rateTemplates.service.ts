@@ -87,7 +87,7 @@ export interface ComponentSyncInput {
   isTax: boolean;
   fixedValue?: number | null;
   percentageValue?: number | null;
-  containerRates?: { containerSizeId: number; rateValue: number }[];
+  containerRates?: { containerSizeId: number; rateValue: number; textValue?: string | null }[];
   textValue?: string | null;
   remark?: string | null;
 }
@@ -144,7 +144,7 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
             })
           ).id;
 
-      if (component.componentType === "PER_CONTAINER") {
+      if (component.componentType === "PER_CONTAINER" || component.componentType === "PER_CONTAINER_TEXT") {
         const existingRates = existing.find((c) => c.id === componentId)?.containerRates ?? [];
         const incomingSizeIds = new Set((component.containerRates ?? []).map((r) => r.containerSizeId));
         for (const rate of existingRates) {
@@ -155,8 +155,8 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
         for (const rate of component.containerRates ?? []) {
           await tx.rateTemplateContainerRate.upsert({
             where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: componentId, containerSizeId: rate.containerSizeId } },
-            update: { rateValue: rate.rateValue },
-            create: { rateTemplateComponentId: componentId, containerSizeId: rate.containerSizeId, rateValue: rate.rateValue },
+            update: { rateValue: rate.rateValue, textValue: rate.textValue ?? null },
+            create: { rateTemplateComponentId: componentId, containerSizeId: rate.containerSizeId, rateValue: rate.rateValue, textValue: rate.textValue ?? null },
           });
         }
       }
@@ -198,6 +198,8 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
           fixedValue: component.fixedValue,
           percentageValue: component.percentageValue,
           sortOrder: component.sortOrder,
+          textValue: component.textValue,
+          remark: component.remark,
         },
       });
       if (component.containerRates.length > 0) {
@@ -206,6 +208,7 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
             rateTemplateComponentId: newComponent.id,
             containerSizeId: r.containerSizeId,
             rateValue: r.rateValue,
+            textValue: r.textValue,
           })),
         });
       }

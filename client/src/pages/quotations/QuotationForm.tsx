@@ -130,6 +130,7 @@ export function QuotationForm() {
         containerRates: (li.containerBreakdown ?? []).map((cb) => ({
           containerSizeId: Number(cb.containerSizeId),
           rateValue: cb.rate,
+          textValue: cb.textValue,
         })),
       })),
     );

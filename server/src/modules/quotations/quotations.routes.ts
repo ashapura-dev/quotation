@@ -23,11 +23,11 @@ router.use(authenticate);
 
 const componentSchema = z.object({
   label: z.string().min(1),
-  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "TEXT"]),
+  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "PER_CONTAINER_TEXT", "TEXT"]),
   isTax: z.boolean(),
   fixedValue: z.number().nullable().optional(),
   percentageValue: z.number().nullable().optional(),
-  containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number() })).optional(),
+  containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number(), textValue: z.string().nullable().optional() })).optional(),
   sourceTemplateComponentId: z.number().nullable().optional(),
   textValue: z.string().nullable().optional(),
   remark: z.string().nullable().optional(),

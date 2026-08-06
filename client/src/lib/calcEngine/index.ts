@@ -33,6 +33,7 @@ function computePerContainerAmount(
       quantity: container.quantity,
       rate,
       lineTotal: round2(rate * container.quantity),
+      textValue: (component.containerRates ?? []).find((entry) => entry.containerSizeId === container.containerSizeId)?.textValue,
     });
   }
 
@@ -78,6 +79,27 @@ export function computeQuotationTotals(
         isTax: component.isTax,
         sortOrder: component.sortOrder,
         computedAmount: amount,
+        containerBreakdown: breakdown,
+      });
+    } else if (component.componentType === "PER_CONTAINER_TEXT") {
+      const breakdown = selectedContainers.flatMap((container) => {
+        const textValue = (component.containerRates ?? []).find((rate) => rate.containerSizeId === container.containerSizeId)?.textValue;
+        return textValue === undefined ? [] : [{
+          containerSizeId: container.containerSizeId,
+          label: container.label,
+          quantity: container.quantity,
+          rate: 0,
+          lineTotal: 0,
+          textValue,
+        }];
+      });
+      fixedAndContainerItems.push({
+        id: component.id,
+        label: component.label,
+        componentType: component.componentType,
+        isTax: component.isTax,
+        sortOrder: component.sortOrder,
+        computedAmount: 0,
         containerBreakdown: breakdown,
       });
     } else if (component.componentType === "TEXT") {

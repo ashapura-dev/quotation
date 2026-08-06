@@ -346,6 +346,9 @@ export function QuotationDetail() {
                 if (entry40 && entry40.rate !== undefined && entry40.rate !== null) {
                   rate40 = `Rs. ${Number(entry40.rate).toFixed(2)}`;
                 }
+              } else if (li.componentType === "PER_CONTAINER_TEXT" && breakdown && Array.isArray(breakdown)) {
+                rate20 = breakdown.find((b: any) => b.label.includes("20"))?.textValue || "-";
+                rate40 = breakdown.find((b: any) => b.label.includes("40"))?.textValue || "-";
               } else if (li.componentType === "FIXED") {
                 const val = `Rs. ${Number(li.fixedValue ?? 0).toFixed(2)}`;
                 rate20 = val;

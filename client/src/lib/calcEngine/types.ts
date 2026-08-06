@@ -1,8 +1,9 @@
-export type ComponentType = "FIXED" | "PERCENTAGE" | "PER_CONTAINER" | "TEXT";
+export type ComponentType = "FIXED" | "PERCENTAGE" | "PER_CONTAINER" | "PER_CONTAINER_TEXT" | "TEXT";
 
 export interface ContainerRateInput {
   containerSizeId: string;
   rateValue: number;
+  textValue?: string;
 }
 
 export interface ComponentInput {
@@ -35,6 +36,7 @@ export interface ContainerBreakdownEntry {
   quantity: number;
   rate: number;
   lineTotal: number;
+  textValue?: string;
 }
 
 export interface ComputedLineItem {
