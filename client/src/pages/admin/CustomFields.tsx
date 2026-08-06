@@ -129,7 +129,7 @@ export function CustomFields() {
         </Table.Thead>
         <Table.Tbody>
           {query.data?.map((field) => (
-            <Table.Tr key={field.id} opacity={field.isActive ? 1 : 0.5}>
+            <Table.Tr key={field.id}>
               <Table.Td fw={500}>{field.label}</Table.Td>
               <Table.Td style={{ fontFamily: "monospace", fontSize: "12px" }}>{field.name}</Table.Td>
               <Table.Td>{field.type}</Table.Td>
@@ -141,13 +141,19 @@ export function CustomFields() {
                   <ActionIcon variant="subtle" onClick={() => openEdit(field)}>
                     <IconPencil size={16} />
                   </ActionIcon>
-                  {field.isActive && (
-                    <Tooltip label="Deactivate">
-                      <ActionIcon variant="subtle" color="red" onClick={() => deleteMutation.mutate(field.id)}>
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
+                  <Tooltip label="Delete">
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete the custom field "${field.label}"?`)) {
+                          deleteMutation.mutate(field.id);
+                        }
+                      }}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Group>
               </Table.Td>
             </Table.Tr>
