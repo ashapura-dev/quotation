@@ -119,7 +119,6 @@ export function QuotationList() {
     { key: "number", header: "Number" },
     { key: "type", header: "Type" },
     { key: "status", header: "Status", className: styles.statusColumn },
-    { key: "total", header: "Grand total" },
     { key: "createdBy", header: "Created by" },
     { key: "approvedBy", header: "Approved by" },
     { key: "date", header: "Date" },
@@ -496,7 +495,6 @@ export function QuotationList() {
                       {STATUS_LABEL[q.status] ?? q.status.replaceAll("_", " ")}
                     </Badge>
                   </Table.Td>
-                  <Table.Td>{q.grandTotal.toFixed(2)}</Table.Td>
                   <Table.Td>{q.createdBy?.name}</Table.Td>
                   <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
                   <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
