@@ -22,9 +22,7 @@ type SeedComponent = {
 async function main() {
   const admin = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
-    update: {
-      passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 12),
-    },
+    update: {},
     create: {
       name: "Admin",
       email: ADMIN_EMAIL,
@@ -45,22 +43,12 @@ async function main() {
     });
   }
 
-  // Delete the old "DPD Standard" template (id: 1) if it exists
-  await prisma.rateTemplate.deleteMany({
-    where: { id: 1 }
-  });
-
   const sizes = await prisma.containerSize.findMany();
 
   // Template 2: DPD+CFS Nhava Sheva
   const nhavaDpdTemplate = await prisma.rateTemplate.upsert({
     where: { id: 2 },
-    update: {
-      name: "DPD+CFS Nhava Sheva",
-      quotationType: "DPD",
-      isDefault: true,
-      location: "Nhava Sheva",
-    },
+    update: {},
     create: {
       id: 2,
       name: "DPD+CFS Nhava Sheva",
@@ -71,12 +59,7 @@ async function main() {
     },
   });
 
-  // Clean components for Template 2
-  await prisma.rateTemplateComponent.deleteMany({
-    where: { rateTemplateId: 2 },
-  });
-
-  // Create components for DPD+CFS Nhava Sheva
+  // Create default components only when this template has none.
   const componentsDpd: SeedComponent[] = [
     { label: "Agency / Handling Charges", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 0 },
     { label: "CFS Charges", componentType: "PER_CONTAINER" as const, sortOrder: 1, rates: { "20FT": 7500, "40FT": 9000 } },
@@ -86,7 +69,8 @@ async function main() {
     { label: "Transportation", componentType: "PER_CONTAINER" as const, sortOrder: 5, rates: { "20FT": 21000, "40FT": 23000 } },
   ];
 
-  for (const comp of componentsDpd) {
+  const nhavaDpdComponentCount = await prisma.rateTemplateComponent.count({ where: { rateTemplateId: nhavaDpdTemplate.id } });
+  if (nhavaDpdComponentCount === 0) for (const comp of componentsDpd) {
     const createdComp = await prisma.rateTemplateComponent.create({
       data: {
         rateTemplateId: nhavaDpdTemplate.id,
@@ -116,12 +100,7 @@ async function main() {
   // Template 3: Non-DPD Nhava Sheva
   const nhavaNonDpdTemplate = await prisma.rateTemplate.upsert({
     where: { id: 3 },
-    update: {
-      name: "Non-DPD Nhava Sheva",
-      quotationType: "NON_DPD",
-      isDefault: true,
-      location: "Nhava Sheva",
-    },
+    update: {},
     create: {
       id: 3,
       name: "Non-DPD Nhava Sheva",
@@ -132,12 +111,7 @@ async function main() {
     },
   });
 
-  // Clean components for Template 3
-  await prisma.rateTemplateComponent.deleteMany({
-    where: { rateTemplateId: 3 },
-  });
-
-  // Create components for Non-DPD Nhava Sheva
+  // Create default components only when this template has none.
   const componentsNonDpd: SeedComponent[] = [
     { label: "Agency / Handling Charges", componentType: "PER_CONTAINER" as const, sortOrder: 0, rates: { "20FT": 3000, "40FT": 3500 } },
     { label: "CFS Charges (At Actual)", componentType: "FIXED" as const, fixedValue: 0, sortOrder: 1 },
@@ -147,7 +121,8 @@ async function main() {
     { label: "Transportation", componentType: "PER_CONTAINER" as const, sortOrder: 5, rates: { "20FT": 21000, "40FT": 23000 } },
   ];
 
-  for (const comp of componentsNonDpd) {
+  const nhavaNonDpdComponentCount = await prisma.rateTemplateComponent.count({ where: { rateTemplateId: nhavaNonDpdTemplate.id } });
+  if (nhavaNonDpdComponentCount === 0) for (const comp of componentsNonDpd) {
     const createdComp = await prisma.rateTemplateComponent.create({
       data: {
         rateTemplateId: nhavaNonDpdTemplate.id,
@@ -189,10 +164,7 @@ Payment terms – Third party complete advance // rest within 15 days from the b
 
   await prisma.pdfTemplate.upsert({
     where: { id: 1 },
-    update: {
-      termsAndConditions: defaultTerms,
-      htmlTemplate: quotationHtml,
-    },
+    update: {},
     create: {
       id: 1,
       name: "Default Template",
@@ -203,10 +175,6 @@ Payment terms – Third party complete advance // rest within 15 days from the b
       termsAndConditions: defaultTerms,
       htmlTemplate: quotationHtml,
     },
-  });
-
-  await prisma.customField.deleteMany({
-    where: { name: "notes", isDefault: true },
   });
 
   const coreFields = [
@@ -242,14 +210,7 @@ Payment terms – Third party complete advance // rest within 15 days from the b
   for (const [listOrder, field] of defaultFields.entries()) {
     await prisma.customField.upsert({
       where: { name: field.name },
-      update: {
-        isDefault: true,
-        required: field.required ?? false,
-        category: field.category,
-        listOrder,
-        showInFilter: field.showInFilter,
-        showInList: true,
-      },
+      update: {},
       create: {
         name: field.name,
         label: field.label,
