@@ -117,7 +117,6 @@ export function QuotationList() {
   const listFields = customFieldsQuery.data?.filter((field) => field.showInList) ?? [];
   const tableColumns: DataTableColumn[] = [
     { key: "number", header: "Number" },
-    { key: "client", header: "Client" },
     { key: "type", header: "Type" },
     { key: "status", header: "Status", className: styles.statusColumn },
     { key: "total", header: "Grand total" },
@@ -491,7 +490,6 @@ export function QuotationList() {
                   >
                     {q.quotationNumber}
                   </Table.Td>
-                  <Table.Td>{q.clientName}</Table.Td>
                   <Table.Td>{q.quotationType}</Table.Td>
                   <Table.Td className={styles.statusColumn}>
                     <Badge color={STATUS_COLOR[q.status]} variant="light" size="md" className={styles.statusBadge}>
