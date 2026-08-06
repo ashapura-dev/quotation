@@ -1,0 +1,10 @@
+.page { max-width: 1500px; margin: 0 auto; padding-bottom: 28px; }
+.title { font-size: clamp(1.8rem, 3vw, 2.25rem); letter-spacing: -0.04em; }
+.commandBar { position: sticky; top: 70px; z-index: 75; margin-bottom: 18px; background: rgba(255,255,255,.94); backdrop-filter: blur(12px); border-color: #e2e8f0; box-shadow: 0 8px 25px rgba(15,23,42,.05); }
+.search { flex: 1 1 300px; max-width: 440px; }
+.tableCard { overflow: hidden; border-color: #e2e8f0; box-shadow: 0 12px 35px rgba(15,23,42,.045); }
+.table { border: 0 !important; border-top: 1px solid #e9edf3 !important; border-radius: 0 !important; box-shadow: none !important; }
+.table th { position: static !important; top: auto !important; background: #f8fafc !important; color: #64748b !important; border-bottom: 1px solid #e2e8f0 !important; }
+.table tbody tr:hover { transform: none !important; }
+.pagination { padding: 16px 20px; border-top: 1px solid #edf0f4; }
+@media (max-width: 48em) { .commandBar { position: static; } .search { max-width: none; width: 100%; } .pagination { align-items: flex-start; flex-direction: column; } }

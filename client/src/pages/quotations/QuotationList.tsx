@@ -1,10 +1,12 @@
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Divider,
   Group,
   Pagination,
+  Paper,
   Select,
   Stack,
   Table,
@@ -12,17 +14,19 @@ import {
   TextInput,
   Title,
   Tooltip,
+  ThemeIcon,
   Loader,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { IconDownload, IconFilter, IconSearch, IconTrash, IconX } from "@tabler/icons-react";
+import { IconDownload, IconEdit, IconEye, IconFileDescription, IconFilter, IconPlus, IconSearch, IconTrash, IconX } from "@tabler/icons-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteQuotation, exportQuotationsUrl, fetchQuotations, type QuotationFilters } from "../../api/quotations";
 import { fetchCustomFields } from "../../api/customFields";
 import { useAuth } from "../../hooks/useAuth";
+import styles from "./QuotationList.module.css";
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "gray",
@@ -34,7 +38,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
-const SIDEBAR_W = 256;
+const SIDEBAR_W = 360;
 
 export function QuotationList() {
   const navigate = useNavigate();
@@ -114,15 +118,18 @@ export function QuotationList() {
 
   return (
     // Outer wrapper — relative so the absolute sidebar is positioned against it
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative" }} className={styles.page}>
 
       {/* ── FILTER SIDEBAR (slides in from the left) ── */}
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Quotation filters"
         style={{
           position: "fixed",
           top: 60,           // below app header
-          right: sidebarOpen ? 0 : -SIDEBAR_W,
-          width: SIDEBAR_W,
+          right: sidebarOpen ? 0 : `-${SIDEBAR_W + 24}px`,
+          width: `min(${SIDEBAR_W}px, 100vw)`,
           height: "calc(100vh - 60px)",
           zIndex: 200,
           transition: "right 0.28s cubic-bezier(0.4,0,0.2,1)",
@@ -131,15 +138,14 @@ export function QuotationList() {
           boxShadow: sidebarOpen ? "-4px 0 20px rgba(0,0,0,0.10)" : "none",
           display: "flex",
           flexDirection: "column",
-          overflowY: "auto",
-          overflowX: "hidden",
+          overflow: "hidden",
         }}
       >
         {/* Header */}
         <Group
           justify="space-between"
-          px="md"
-          py="sm"
+          px="lg"
+          py="md"
           style={{
             borderBottom: "1px solid #f1f5f9",
             flexShrink: 0,
@@ -150,10 +156,11 @@ export function QuotationList() {
           }}
         >
           <Group gap="xs">
-            <IconFilter size={14} color="#64748b" />
-            <Text fw={700} size="xs" style={{ color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.6px" }}>
-              Filters
-            </Text>
+            <IconFilter size={18} color="#2563eb" />
+            <div>
+              <Text fw={700} size="sm" c="dark.8">Filter quotations</Text>
+              <Text size="xs" c="dimmed">Narrow down your results</Text>
+            </div>
             {sidebarFilterCount > 0 && (
               <Badge size="xs" circle color="blue" variant="filled">
                 {sidebarFilterCount}
@@ -162,16 +169,17 @@ export function QuotationList() {
           </Group>
           <ActionIcon
             variant="subtle"
-            size="sm"
+            size="lg"
             onClick={() => setSidebarOpen(false)}
             style={{ color: "#64748b" }}
+            aria-label="Close quotation filters"
           >
-            <IconX size={14} />
+            <IconX size={18} />
           </ActionIcon>
         </Group>
 
         {/* Filter fields */}
-        <Stack gap="lg" px="md" py="md" style={{ flex: 1 }}>
+        <Stack gap="lg" px="lg" py="lg" style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
 
           {/* Status */}
           <div>
@@ -223,7 +231,7 @@ export function QuotationList() {
             <Stack gap={6}>
               <TextInput
                 type="date"
-                placeholder="From"
+                label="From"
                 value={dateFrom}
                 onChange={(e) => { setDateFrom(e.currentTarget.value); setPage(1); }}
                 styles={inputStyles}
@@ -231,7 +239,7 @@ export function QuotationList() {
               />
               <TextInput
                 type="date"
-                placeholder="To"
+                label="To"
                 value={dateTo}
                 onChange={(e) => { setDateTo(e.currentTarget.value); setPage(1); }}
                 styles={inputStyles}
@@ -306,31 +314,30 @@ export function QuotationList() {
           )}
         </Stack>
 
-        {/* Clear / Apply footer */}
-        {sidebarFilterCount > 0 && (
-          <div
-            style={{
-              padding: "12px 16px",
-              borderTop: "1px solid #f1f5f9",
-              flexShrink: 0,
-              position: "sticky",
-              bottom: 0,
-              background: "#ffffff",
-            }}
-          >
+        {/* Fixed footer stays available while the filter fields scroll. */}
+        <div
+          style={{
+            padding: "14px 24px",
+            borderTop: "1px solid #e2e8f0",
+            flexShrink: 0,
+            background: "#ffffff",
+          }}
+        >
+          <Group grow>
             <Button
-              variant="subtle"
-              color="red"
-              size="xs"
-              fullWidth
-              leftSection={<IconX size={12} />}
+              variant="default"
+              size="sm"
+              disabled={sidebarFilterCount === 0}
               onClick={clearSidebarFilters}
               style={{ borderRadius: 8 }}
             >
-              Clear all filters
+              Clear all
             </Button>
-          </div>
-        )}
+            <Button size="sm" onClick={() => setSidebarOpen(false)} style={{ borderRadius: 8 }}>
+              Show results
+            </Button>
+          </Group>
+        </div>
       </aside>
 
       {/* Backdrop when sidebar open */}
@@ -339,37 +346,39 @@ export function QuotationList() {
           onClick={() => setSidebarOpen(false)}
           style={{
             position: "fixed",
-            inset: 0,
+            top: 60,
+            right: 0,
+            bottom: 0,
+            left: 0,
             zIndex: 199,
-            background: "rgba(0,0,0,0.15)",
+            background: "rgba(15, 23, 42, 0.28)",
+            backdropFilter: "blur(1px)",
           }}
         />
       )}
 
       {/* ── TOP BAR (sticky) ── */}
-      <div
-        style={{
-          position: "sticky",
-          top: 60,
-          backgroundColor: "#f8fafc",
-          zIndex: 100,
-          paddingTop: 10,
-          paddingBottom: 10,
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
-          marginBottom: 16,
-        }}
-      >
-        <Group justify="space-between" wrap="nowrap">
-          {/* Left: title */}
-          <Title order={2}>Quotations</Title>
+      <Group justify="space-between" align="flex-end" mb="lg" wrap="wrap">
+        <Group gap="sm" wrap="nowrap">
+          <ThemeIcon size={46} radius="md" variant="light"><IconFileDescription size={24} /></ThemeIcon>
+          <Box>
+            <Title order={1} className={styles.title}>Quotations</Title>
+            <Text c="dimmed" size="sm">Create, track and manage client quotations.</Text>
+          </Box>
+        </Group>
+        {query.data && <Badge variant="light" color="gray" size="lg">{query.data.total} total</Badge>}
+      </Group>
+
+      <Paper withBorder radius="lg" p="md" className={styles.commandBar}>
+        <Group justify="space-between" wrap="wrap" gap="md">
 
           {/* Centre: client search — always visible */}
           <TextInput
             placeholder="Search by client name…"
-            leftSection={<IconSearch size={14} />}
+            leftSection={<IconSearch size={16} />}
             value={search}
             onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
-            style={{ flex: "0 1 280px" }}
+            className={styles.search}
             radius="md"
           />
 
@@ -401,7 +410,7 @@ export function QuotationList() {
             >
               Export
             </Button>
-            <Button onClick={() => navigate("/quotations/new")}>New quotation</Button>
+            <Button leftSection={<IconPlus size={17} />} onClick={() => navigate("/quotations/new")}>New quotation</Button>
             <Tooltip label={sidebarOpen ? "Close filters" : "Open filters"} position="bottom-end">
               <ActionIcon
                 variant={sidebarOpen || sidebarFilterCount > 0 ? "filled" : "light"}
@@ -435,10 +444,19 @@ export function QuotationList() {
             </Tooltip>
           </Group>
         </Group>
-      </div>
+      </Paper>
 
       {/* ── TABLE ── */}
-      <Table className="sticky-th" striped highlightOnHover verticalSpacing="sm">
+      <Paper withBorder radius="lg" className={styles.tableCard}>
+      <Group justify="space-between" px="lg" py="md">
+        <Box>
+          <Text fw={650}>Quotation register</Text>
+          <Text size="xs" c="dimmed">Showing the latest matching records</Text>
+        </Box>
+        {sidebarFilterCount > 0 && <Badge variant="light" leftSection={<IconFilter size={12} />}>{sidebarFilterCount} active filters</Badge>}
+      </Group>
+      <Table.ScrollContainer minWidth={1180}>
+      <Table striped highlightOnHover verticalSpacing="sm" className={styles.table}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Number</Table.Th>
@@ -452,7 +470,7 @@ export function QuotationList() {
             {customFieldsQuery.data?.filter((f) => f.showInList).map((f) => (
               <Table.Th key={f.name}>{f.label}</Table.Th>
             ))}
-            <Table.Th />
+            <Table.Th>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -470,6 +488,8 @@ export function QuotationList() {
           ) : (
             query.data?.quotations.map((q) => {
               const canDelete =
+                user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
+              const canEdit =
                 user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
               return (
                 <Table.Tr key={q.id}>
@@ -499,11 +519,37 @@ export function QuotationList() {
                     return <Table.Td key={f.name}>{displayVal}</Table.Td>;
                   })}
                   <Table.Td>
-                    {canDelete && (
+                    <Group gap={6} wrap="nowrap">
+                      <Tooltip label="View quotation">
+                        <ActionIcon
+                          variant="light"
+                          color="blue"
+                          radius="md"
+                          onClick={() => navigate(`/quotations/${q.id}`)}
+                          aria-label={`View quotation ${q.quotationNumber}`}
+                        >
+                          <IconEye size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                      {canEdit && (
+                        <Tooltip label="Edit quotation">
+                          <ActionIcon
+                            variant="light"
+                            color="orange"
+                            radius="md"
+                            onClick={() => navigate(`/quotations/${q.id}/edit`)}
+                            aria-label={`Edit quotation ${q.quotationNumber}`}
+                          >
+                            <IconEdit size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      {canDelete && (
                       <Tooltip label="Delete">
                         <ActionIcon
-                          variant="subtle"
+                          variant="light"
                           color="red"
+                          radius="md"
                           onClick={() => {
                             if (confirm(`Delete quotation ${q.quotationNumber}?`))
                               deleteMutation.mutate(q.id);
@@ -512,7 +558,8 @@ export function QuotationList() {
                           <IconTrash size={16} />
                         </ActionIcon>
                       </Tooltip>
-                    )}
+                      )}
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
               );
@@ -520,19 +567,22 @@ export function QuotationList() {
           )}
         </Table.Tbody>
       </Table>
+      </Table.ScrollContainer>
 
       {query.data?.quotations.length === 0 && (
-        <Text c="dimmed" mt="md">
-          No quotations match your filters.
-        </Text>
+        <Stack align="center" gap={8} py={50}>
+          <ThemeIcon size={50} radius="xl" variant="light" color="gray"><IconSearch size={24} /></ThemeIcon>
+          <Text fw={600}>No quotations found</Text>
+          <Text c="dimmed" size="sm">Try changing your search or clearing the active filters.</Text>
+          {sidebarFilterCount > 0 && <Button variant="light" size="xs" onClick={clearSidebarFilters}>Clear filters</Button>}
+        </Stack>
       )}
 
       {query.data && query.data.total > 0 && (
         <Group
           justify="space-between"
           align="center"
-          mt="lg"
-          style={{ borderTop: "1px solid rgba(0,0,0,0.05)", paddingTop: 16 }}
+          className={styles.pagination}
         >
           <Text size="xs" c="dimmed">
             Showing {Math.min(query.data.total, (page - 1) * pageSize + 1)}–
@@ -561,6 +611,7 @@ export function QuotationList() {
           </Group>
         </Group>
       )}
+      </Paper>
     </div>
   );
 }
