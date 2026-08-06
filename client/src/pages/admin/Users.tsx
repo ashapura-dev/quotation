@@ -9,7 +9,6 @@ import {
   Switch,
   Table,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { useForm, zodResolver } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
@@ -21,6 +20,8 @@ import type { Role } from "../../api/auth";
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { DataTable } from "../../components/DataTable";
+import { PageHeader } from "../../components/PageHeader";
+import { IconPlus, IconUsers } from "@tabler/icons-react";
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "SUPER_ADMIN", label: "Super Admin" },
@@ -88,10 +89,13 @@ export function Users() {
 
   return (
     <div>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Users</Title>
-        <Button onClick={open}>New user</Button>
-      </Group>
+      <PageHeader
+        title="Users"
+        description="Manage team access, roles and account status."
+        eyebrow="Administration"
+        icon={IconUsers}
+        actions={<Button leftSection={<IconPlus size={17} />} onClick={open}>New user</Button>}
+      />
 
       <DataTable columns={["Name", "Email", "Role", "Status", "Actions"].map((header) => ({ key: header, header }))} loading={usersQuery.isPending} minWidth={760}>
             {usersQuery.data?.map((u: User) => (

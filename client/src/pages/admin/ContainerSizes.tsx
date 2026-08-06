@@ -1,9 +1,9 @@
-import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Title, Tooltip } from "@mantine/core";
+import { ActionIcon, Button, Group, Modal, Stack, Table, TextInput, Tooltip } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconBoxSeam, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 import {
   createContainerSize,
@@ -13,6 +13,7 @@ import {
   type ContainerSize,
 } from "../../api/containerSizes";
 import { DataTable } from "../../components/DataTable";
+import { PageHeader } from "../../components/PageHeader";
 
 export function ContainerSizes() {
   const queryClient = useQueryClient();
@@ -57,10 +58,13 @@ export function ContainerSizes() {
 
   return (
     <div>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Container Sizes</Title>
-        <Button onClick={openCreate}>Add container size</Button>
-      </Group>
+      <PageHeader
+        title="Container Sizes"
+        description="Configure the container types available in quotations."
+        eyebrow="Administration"
+        icon={IconBoxSeam}
+        actions={<Button leftSection={<IconPlus size={17} />} onClick={openCreate}>Add container size</Button>}
+      />
 
       <DataTable columns={["Code", "Label", "Status", "Actions"].map((header) => ({ key: header, header }))} loading={query.isPending} minWidth={620}>
             {query.data?.map((size) => (
