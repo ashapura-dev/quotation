@@ -11,6 +11,8 @@
 .tableWrap td { padding: 15px 18px !important; }
 .tableWrap tbody tr:hover { transform: none; box-shadow: inset 3px 0 0 #3b82f6 !important; }
 .inactiveRow { opacity: .62; }
+.dragHandle { color: #94a3b8; cursor: grab; flex: 0 0 auto; }
+.draggingRow { opacity: .45; }
 .emptyState { min-height: 260px; text-align: center; }
 .modalHeader { padding: 24px 28px 20px; border-bottom: 1px solid #edf0f4; background: linear-gradient(145deg,#f8fbff,#fff); }
 .modalFooter { padding: 18px 28px; border-top: 1px solid #e9edf2; background: #f8fafc; }

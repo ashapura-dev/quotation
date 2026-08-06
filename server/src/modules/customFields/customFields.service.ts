@@ -12,7 +12,7 @@ function slugify(label: string): string {
 export async function listCustomFields(onlyActive = false) {
   return prisma.customField.findMany({
     where: onlyActive ? { isActive: true } : {},
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ listOrder: "asc" }, { createdAt: "asc" }],
   });
 }
 
@@ -26,6 +26,7 @@ export async function createCustomField(input: {
   showInExport?: boolean;
   showInList?: boolean;
 }) {
+  const maxOrder = await prisma.customField.aggregate({ _max: { listOrder: true } });
   const name = slugify(input.label);
   if (!name) {
     throw new HttpError(400, "Invalid label. Custom field label must contain alphanumeric characters.");
@@ -67,6 +68,8 @@ export async function createCustomField(input: {
       showInFilter: input.showInFilter ?? true,
       showInExport: input.showInExport ?? true,
       showInList: input.showInList ?? true,
+      category: "CUSTOM",
+      listOrder: (maxOrder._max.listOrder ?? -1) + 1,
     },
   });
 }
@@ -97,7 +100,7 @@ export async function updateCustomField(
       showInExport: input.showInExport,
       showInList: input.showInList,
     };
-    if (input.label !== undefined) {
+    if (field.category !== "CORE" && input.label !== undefined) {
       data.label = input.label;
     }
     return prisma.customField.update({
@@ -136,6 +139,16 @@ export async function updateCustomField(
     where: { id },
     data,
   });
+}
+
+export async function reorderCustomFields(orderedIds: number[]) {
+  const existingCount = await prisma.customField.count({ where: { id: { in: orderedIds } } });
+  if (existingCount !== orderedIds.length) throw new HttpError(400, "One or more custom fields are invalid.");
+
+  await prisma.$transaction(
+    orderedIds.map((id, listOrder) => prisma.customField.update({ where: { id }, data: { listOrder } })),
+  );
+  return listCustomFields(false);
 }
 
 export async function deleteCustomField(id: number) {

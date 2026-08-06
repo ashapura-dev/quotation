@@ -6,6 +6,7 @@ import {
   createCustomField,
   deleteCustomField,
   listCustomFields,
+  reorderCustomFields,
   updateCustomField,
 } from "./customFields.service.js";
 
@@ -38,6 +39,15 @@ router.post(
   asyncHandler(async (req, res) => {
     res.status(201).json({ customField: await createCustomField(createSchema.parse(req.body)) });
   })
+);
+
+router.put(
+  "/reorder",
+  requireRole("SUPER_ADMIN"),
+  asyncHandler(async (req, res) => {
+    const { orderedIds } = z.object({ orderedIds: z.array(z.number().int().positive()) }).parse(req.body);
+    res.json({ customFields: await reorderCustomFields(orderedIds) });
+  }),
 );
 
 const updateSchema = z.object({

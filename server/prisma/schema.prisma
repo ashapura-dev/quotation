@@ -353,6 +353,8 @@ model CustomField {
   showInExport Boolean  @default(true)
   showInList   Boolean  @default(true)
   isDefault    Boolean  @default(false)
+  category     String   @default("CUSTOM") // CORE, SYSTEM, CUSTOM
+  listOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

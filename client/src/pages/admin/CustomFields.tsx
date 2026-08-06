@@ -30,6 +30,7 @@ import {
   IconChevronRight,
   IconFileDescription,
   IconHash,
+  IconGripVertical,
   IconList,
   IconPencil,
   IconPlus,
@@ -44,6 +45,7 @@ import {
   createCustomField,
   deleteCustomField,
   fetchCustomFields,
+  reorderCustomFields,
   updateCustomField,
   type CustomField,
 } from "../../api/customFields";
@@ -61,6 +63,7 @@ const TYPE_META: Record<FieldType, { label: string; description: string; color: 
 };
 
 const TYPE_OPTIONS = Object.entries(TYPE_META).map(([value, meta]) => ({ value, label: meta.label }));
+const FILTERABLE_CORE_FIELDS = new Set(["quotationType", "status", "createdAt"]);
 
 export function CustomFields() {
   const queryClient = useQueryClient();
@@ -70,6 +73,7 @@ export function CustomFields() {
   const [optionsList, setOptionsList] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>("all");
+  const [draggedId, setDraggedId] = useState<number | null>(null);
 
   const query = useQuery({ queryKey: ["custom-fields", true], queryFn: () => fetchCustomFields(true) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["custom-fields"] });
@@ -130,6 +134,12 @@ export function CustomFields() {
       updateCustomField(id, patch),
     onSuccess: () => invalidate(),
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not update field", message: err.message }),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: reorderCustomFields,
+    onSuccess: () => invalidate(),
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not reorder fields", message: err.message }),
   });
 
   const fields = query.data ?? [];
@@ -204,6 +214,18 @@ export function CustomFields() {
     toggleMutation.mutate({ id: field.id, patch: { [key]: value } });
   }
 
+  function dropField(targetId: number) {
+    if (draggedId === null || draggedId === targetId) return setDraggedId(null);
+    const orderedIds = fields.map((field) => field.id);
+    const from = orderedIds.indexOf(draggedId);
+    const to = orderedIds.indexOf(targetId);
+    if (from < 0 || to < 0) return setDraggedId(null);
+    const [moved] = orderedIds.splice(from, 1);
+    orderedIds.splice(to, 0, moved);
+    reorderMutation.mutate(orderedIds);
+    setDraggedId(null);
+  }
+
   return (
     <Stack gap="xl" className={styles.page}>
       <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -270,14 +292,24 @@ export function CustomFields() {
                 const meta = TYPE_META[field.type];
                 const TypeIcon = meta.icon;
                 return (
-                  <Table.Tr key={field.id} className={!field.isActive ? styles.inactiveRow : undefined}>
+                  <Table.Tr
+                    key={field.id}
+                    draggable={!search && statusFilter === "all"}
+                    onDragStart={() => setDraggedId(field.id)}
+                    onDragEnd={() => setDraggedId(null)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => dropField(field.id)}
+                    className={`${!field.isActive ? styles.inactiveRow : ""} ${draggedId === field.id ? styles.draggingRow : ""}`}
+                  >
                     <Table.Td>
                       <Group gap="sm" wrap="nowrap">
+                        <IconGripVertical size={17} className={styles.dragHandle} />
                         <ThemeIcon variant="light" color={field.isDefault ? "gray" : meta.color} size={38} radius="md"><TypeIcon size={19} /></ThemeIcon>
                         <Box>
                           <Group gap={7} wrap="nowrap">
                             <Text fw={600}>{field.label}</Text>
-                            {field.isDefault && <Badge size="xs" variant="light" color="gray">System</Badge>}
+                            {field.category === "CORE" && <Badge size="xs" variant="light" color="violet">Core</Badge>}
+                            {field.category === "SYSTEM" && <Badge size="xs" variant="light" color="gray">System</Badge>}
                           </Group>
                           <Text size="xs" c="dimmed">{field.name}</Text>
                         </Box>
@@ -289,12 +321,12 @@ export function CustomFields() {
                     </Table.Td>
                     <Table.Td><Switch size="sm" checked={field.showInPdf} disabled={field.isDefault} onChange={(event) => toggle(field, "showInPdf", event.currentTarget.checked)} aria-label={`Show ${field.label} in PDF`} /></Table.Td>
                     <Table.Td><Switch size="sm" checked={field.showInList} onChange={(event) => toggle(field, "showInList", event.currentTarget.checked)} aria-label={`Show ${field.label} in list`} /></Table.Td>
-                    <Table.Td><Switch size="sm" checked={field.showInFilter} onChange={(event) => toggle(field, "showInFilter", event.currentTarget.checked)} aria-label={`Show ${field.label} in filters`} /></Table.Td>
+                    <Table.Td><Switch size="sm" checked={field.showInFilter} disabled={field.category === "CORE" && !FILTERABLE_CORE_FIELDS.has(field.name)} onChange={(event) => toggle(field, "showInFilter", event.currentTarget.checked)} aria-label={`Show ${field.label} in filters`} /></Table.Td>
                     <Table.Td><Switch size="sm" checked={field.showInExport} onChange={(event) => toggle(field, "showInExport", event.currentTarget.checked)} aria-label={`Include ${field.label} in export`} /></Table.Td>
                     <Table.Td><Badge variant="dot" color={field.isActive ? "teal" : "gray"}>{field.isActive ? "Active" : "Inactive"}</Badge></Table.Td>
                     <Table.Td>
                       <Group justify="flex-end" gap={6} wrap="nowrap">
-                        <Tooltip label="Edit field"><ActionIcon variant="subtle" color="gray" onClick={() => openEdit(field)} aria-label={`Edit ${field.label}`}><IconPencil size={17} /></ActionIcon></Tooltip>
+                        {field.category !== "CORE" && <Tooltip label="Edit field"><ActionIcon variant="subtle" color="gray" onClick={() => openEdit(field)} aria-label={`Edit ${field.label}`}><IconPencil size={17} /></ActionIcon></Tooltip>}
                         {!field.isDefault && <Tooltip label="Delete field"><ActionIcon variant="subtle" color="red" loading={deleteMutation.isPending} onClick={() => window.confirm(`Delete “${field.label}”? This cannot be undone.`) && deleteMutation.mutate(field.id)} aria-label={`Delete ${field.label}`}><IconTrash size={17} /></ActionIcon></Tooltip>}
                         <IconChevronRight size={16} color="#94a3b8" />
                       </Group>

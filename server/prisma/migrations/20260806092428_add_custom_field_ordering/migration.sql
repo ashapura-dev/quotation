@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `custom_fields` ADD COLUMN `category` VARCHAR(191) NOT NULL DEFAULT 'CUSTOM',
+    ADD COLUMN `listOrder` INTEGER NOT NULL DEFAULT 0;

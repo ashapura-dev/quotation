@@ -113,16 +113,11 @@ export function QuotationList() {
     setPage(1);
   }
 
-  const filterableFields = customFieldsQuery.data?.filter((f) => f.showInFilter) ?? [];
+  const filterableFields = customFieldsQuery.data?.filter((field) => field.showInFilter && field.category !== "CORE") ?? [];
+  const coreFilterEnabled = (name: string) => customFieldsQuery.data?.find((field) => field.name === name)?.showInFilter ?? true;
   const listFields = customFieldsQuery.data?.filter((field) => field.showInList) ?? [];
   const tableColumns: DataTableColumn[] = [
-    { key: "number", header: "Number" },
-    { key: "type", header: "Type" },
-    { key: "status", header: "Status", className: styles.statusColumn },
-    { key: "createdBy", header: "Created by" },
-    { key: "approvedBy", header: "Approved by" },
-    { key: "date", header: "Date" },
-    ...listFields.map((field) => ({ key: `custom-${field.name}`, header: field.label })),
+    ...listFields.map((field) => ({ key: `field-${field.name}`, header: field.label, className: field.name === "status" ? styles.statusColumn : undefined })),
     { key: "actions", header: "Actions" },
   ];
 
@@ -202,7 +197,7 @@ export function QuotationList() {
         <Stack gap="lg" px="lg" py="lg" style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
 
           {/* Status */}
-          <div>
+          {coreFilterEnabled("status") && <div>
             <Text size="xs" fw={600} mb={5} style={{ color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               Status
             </Text>
@@ -222,10 +217,10 @@ export function QuotationList() {
               styles={inputStyles}
               size="xs"
             />
-          </div>
+          </div>}
 
           {/* Type */}
-          <div>
+          {coreFilterEnabled("quotationType") && <div>
             <Text size="xs" fw={600} mb={5} style={{ color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               Type
             </Text>
@@ -241,10 +236,10 @@ export function QuotationList() {
               styles={inputStyles}
               size="xs"
             />
-          </div>
+          </div>}
 
           {/* Date Range */}
-          <div>
+          {coreFilterEnabled("createdAt") && <div>
             <Text size="xs" fw={600} mb={5} style={{ color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
               Date Range
             </Text>
@@ -266,7 +261,7 @@ export function QuotationList() {
                 size="xs"
               />
             </Stack>
-          </div>
+          </div>}
 
           {/* Dynamic fields */}
           {filterableFields.length > 0 && (
@@ -409,19 +404,12 @@ export function QuotationList() {
               href={exportQuotationsUrl(
                 filters,
                 [
-                  "quotationNumber",
-                  "clientName",
-                  "quotationType",
-                  "status",
                   "containers",
                   "subtotal",
                   "taxTotal",
                   "otherAdjustmentsTotal",
                   "grandTotal",
-                  "createdBy",
-                  "approvedBy",
-                  "createdAt",
-                  ...(customFieldsQuery.data?.filter((f) => f.showInExport).map((f) => f.name) || []),
+                  ...(customFieldsQuery.data?.filter((field) => field.showInExport).map((field) => field.name) || []),
                 ],
                 API_BASE
               )}
@@ -483,22 +471,13 @@ export function QuotationList() {
                 user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
               return (
                 <Table.Tr key={q.id}>
-                  <Table.Td
-                    style={{ cursor: "pointer" }}
-                    onClick={() => navigate(`/quotations/${q.id}`)}
-                  >
-                    {q.quotationNumber}
-                  </Table.Td>
-                  <Table.Td>{q.quotationType}</Table.Td>
-                  <Table.Td className={styles.statusColumn}>
-                    <Badge color={STATUS_COLOR[q.status]} variant="light" size="md" className={styles.statusBadge}>
-                      {STATUS_LABEL[q.status] ?? q.status.replaceAll("_", " ")}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>{q.createdBy?.name}</Table.Td>
-                  <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
-                  <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
                   {listFields.map((f) => {
+                    if (f.name === "quotationNumber") return <Table.Td key={f.name} style={{ cursor: "pointer", fontWeight: 600 }} onClick={() => navigate(`/quotations/${q.id}`)}>{q.quotationNumber}</Table.Td>;
+                    if (f.name === "quotationType") return <Table.Td key={f.name}>{q.quotationType}</Table.Td>;
+                    if (f.name === "status") return <Table.Td key={f.name} className={styles.statusColumn}><Badge color={STATUS_COLOR[q.status]} variant="light" size="md" className={styles.statusBadge}>{STATUS_LABEL[q.status] ?? q.status.replaceAll("_", " ")}</Badge></Table.Td>;
+                    if (f.name === "createdBy") return <Table.Td key={f.name}>{q.createdBy?.name ?? "-"}</Table.Td>;
+                    if (f.name === "approvedBy") return <Table.Td key={f.name}>{q.approvedBy?.name ?? "-"}</Table.Td>;
+                    if (f.name === "createdAt") return <Table.Td key={f.name}>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>;
                     const val = f.isDefault
                       ? (q as any)[f.name]
                       : (q.customFields as Record<string, any>)?.[f.name];

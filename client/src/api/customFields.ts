@@ -13,6 +13,8 @@ export interface CustomField {
   showInExport: boolean;
   showInList: boolean;
   isDefault: boolean;
+  category: "CORE" | "SYSTEM" | "CUSTOM";
+  listOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,4 +60,9 @@ export async function updateCustomField(
 
 export async function deleteCustomField(id: number): Promise<void> {
   await apiClient.delete(`/api/custom-fields/${id}`);
+}
+
+export async function reorderCustomFields(orderedIds: number[]): Promise<CustomField[]> {
+  const { data } = await apiClient.put<{ customFields: CustomField[] }>("/api/custom-fields/reorder", { orderedIds });
+  return data.customFields;
 }

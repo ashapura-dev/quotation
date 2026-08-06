@@ -209,7 +209,16 @@ Payment terms – Third party complete advance // rest within 15 days from the b
     where: { name: "notes", isDefault: true },
   });
 
-  const defaultFields: Array<{ name: string; label: string; required?: boolean }> = [
+  const coreFields = [
+    { name: "quotationNumber", label: "Number", showInFilter: false },
+    { name: "quotationType", label: "Type", showInFilter: true },
+    { name: "status", label: "Status", showInFilter: true },
+    { name: "createdBy", label: "Created By", showInFilter: false },
+    { name: "approvedBy", label: "Approved By", showInFilter: false },
+    { name: "createdAt", label: "Date", showInFilter: true },
+  ];
+
+  const systemFields: Array<{ name: string; label: string; required?: boolean }> = [
     { name: "clientName", label: "Client Name", required: true },
     { name: "location", label: "Location" },
     { name: "route", label: "Route" },
@@ -225,13 +234,20 @@ Payment terms – Third party complete advance // rest within 15 days from the b
     { name: "clientEmail", label: "Client Email" },
   ];
 
-  for (const field of defaultFields) {
+  const defaultFields = [
+    ...coreFields.map((field) => ({ ...field, category: "CORE" })),
+    ...systemFields.map((field) => ({ ...field, category: "SYSTEM", showInFilter: true })),
+  ];
+
+  for (const [listOrder, field] of defaultFields.entries()) {
     await prisma.customField.upsert({
       where: { name: field.name },
       update: {
         isDefault: true,
         required: field.required ?? false,
-        showInFilter: true,
+        category: field.category,
+        listOrder,
+        showInFilter: field.showInFilter,
         showInList: true,
       },
       create: {
@@ -240,9 +256,11 @@ Payment terms – Third party complete advance // rest within 15 days from the b
         type: "TEXT",
         required: field.required ?? false,
         isDefault: true,
+        category: field.category,
+        listOrder,
         isActive: true,
         showInPdf: true,
-        showInFilter: true,
+        showInFilter: field.showInFilter,
         showInExport: true,
         showInList: true,
       },
