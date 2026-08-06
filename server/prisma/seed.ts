@@ -205,6 +205,10 @@ Payment terms – Third party complete advance // rest within 15 days from the b
     },
   });
 
+  await prisma.customField.deleteMany({
+    where: { name: "notes", isDefault: true },
+  });
+
   const defaultFields: Array<{ name: string; label: string; required?: boolean }> = [
     { name: "clientName", label: "Client Name", required: true },
     { name: "location", label: "Location" },
@@ -214,7 +218,6 @@ Payment terms – Third party complete advance // rest within 15 days from the b
     { name: "commodityType", label: "Commodity Type" },
     { name: "containerDetails", label: "Container Details" },
     { name: "additionalRemarks", label: "Additional Remarks" },
-    { name: "notes", label: "Notes" },
     { name: "clientAddress", label: "Client Address" },
     { name: "clientGstin", label: "Client GSTIN" },
     { name: "clientContactPerson", label: "Client Contact Person" },

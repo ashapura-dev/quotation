@@ -39,6 +39,8 @@ function templateComponentsToDraft(template: RateTemplate): RateComponent[] {
 }
 
 const CLIENT_FIELD_NAMES = new Set(["clientName", "clientAddress", "clientGstin", "clientContactPerson", "clientPhone", "clientEmail"]);
+const SHIPMENT_FIELD_NAMES = new Set(["location", "route", "servicesOffered", "commodityType", "containerDetails"]);
+const QUOTATION_FIELD_NAMES = new Set(["title"]);
 
 export function QuotationForm() {
   const { id } = useParams();
@@ -66,7 +68,6 @@ export function QuotationForm() {
   const [commodityType, setCommodityType] = useState("");
   const [containerDetails, setContainerDetails] = useState("");
   const [additionalRemarks, setAdditionalRemarks] = useState("");
-  const [notes, setNotes] = useState("");
 
   const systemFieldBindings: Record<string, { value: string; setValue: (value: string) => void }> = {
     clientName: { value: clientName, setValue: selectClient },
@@ -77,7 +78,6 @@ export function QuotationForm() {
     commodityType: { value: commodityType, setValue: setCommodityType },
     containerDetails: { value: containerDetails, setValue: setContainerDetails },
     additionalRemarks: { value: additionalRemarks, setValue: setAdditionalRemarks },
-    notes: { value: notes, setValue: setNotes },
     clientAddress: { value: clientAddress, setValue: setClientAddress },
     clientGstin: { value: clientGstin, setValue: setClientGstin },
     clientContactPerson: { value: clientContactPerson, setValue: setClientContactPerson },
@@ -123,7 +123,6 @@ export function QuotationForm() {
     setCommodityType(q.commodityType ?? "");
     setContainerDetails(q.containerDetails ?? "");
     setAdditionalRemarks(q.additionalRemarks ?? "");
-    setNotes(q.notes ?? "");
     setContainers(q.containers);
     setComponents(
       q.lineItems.map((li) => ({
@@ -226,7 +225,6 @@ export function QuotationForm() {
       commodityType: commodityType || undefined,
       containerDetails: containerDetails || undefined,
       additionalRemarks: additionalRemarks || undefined,
-      notes: notes || undefined,
       containers,
       components,
     };
@@ -250,7 +248,7 @@ export function QuotationForm() {
         />
       );
     } else if (field.type === "TEXT") {
-      const isMultiline = ["clientAddress", "containerDetails", "additionalRemarks", "notes"].includes(field.name);
+      const isMultiline = ["clientAddress", "containerDetails", "additionalRemarks"].includes(field.name);
       const props = {
         label: field.label,
         required: field.required,
@@ -283,7 +281,7 @@ export function QuotationForm() {
 
       <Stack gap="md">
         <Card withBorder padding="lg" radius="md">
-          <Text fw={600} size="lg" mb="md">General Information</Text>
+          <Text fw={600} size="lg" mb="md">Quotation Details</Text>
           <Grid align="flex-end">
             <Grid.Col span={{ base: 12, md: 4 }}>
               <SegmentedControl
@@ -312,25 +310,40 @@ export function QuotationForm() {
                 onChange={(v) => applyRateTemplate(v ? Number(v) : null)}
               />
             </Grid.Col>
-          </Grid>
-        </Card>
-
-        <Card withBorder padding="lg" radius="md">
-          <Text fw={600} size="lg" mb="md">Client Details</Text>
-          <Grid>
             {customFieldsQuery.data
-              ?.filter((field) => field.isActive && CLIENT_FIELD_NAMES.has(field.name))
+              ?.filter((field) => field.isActive && QUOTATION_FIELD_NAMES.has(field.name))
               .map(renderField)}
-
           </Grid>
         </Card>
 
-        {customFieldsQuery.data && customFieldsQuery.data.filter(f => f.isActive).length > 0 && (
+        {customFieldsQuery.data?.some((field) => field.isActive && CLIENT_FIELD_NAMES.has(field.name)) && (
           <Card withBorder padding="lg" radius="md">
-            <Text fw={600} size="lg" mb="md">Quotation Details</Text>
+            <Text fw={600} size="lg" mb="md">Client Details</Text>
             <Grid>
               {customFieldsQuery.data
-                .filter((field) => field.isActive && !CLIENT_FIELD_NAMES.has(field.name))
+                .filter((field) => field.isActive && CLIENT_FIELD_NAMES.has(field.name))
+                .map(renderField)}
+            </Grid>
+          </Card>
+        )}
+
+        {customFieldsQuery.data?.some((field) => field.isActive && SHIPMENT_FIELD_NAMES.has(field.name)) && (
+          <Card withBorder padding="lg" radius="md">
+            <Text fw={600} size="lg" mb="md">Shipment Details</Text>
+            <Grid>
+              {customFieldsQuery.data
+                .filter((field) => field.isActive && SHIPMENT_FIELD_NAMES.has(field.name))
+                .map(renderField)}
+            </Grid>
+          </Card>
+        )}
+
+        {customFieldsQuery.data?.some((field) => field.isActive && !field.isDefault) && (
+          <Card withBorder padding="lg" radius="md">
+            <Text fw={600} size="lg" mb="md">Additional Details</Text>
+            <Grid>
+              {customFieldsQuery.data
+                .filter((field) => field.isActive && !field.isDefault)
                 .map(renderField)}
             </Grid>
           </Card>
