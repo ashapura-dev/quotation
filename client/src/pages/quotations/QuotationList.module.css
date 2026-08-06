@@ -6,5 +6,7 @@
 .table { border: 0 !important; border-top: 1px solid #e9edf3 !important; border-radius: 0 !important; box-shadow: none !important; }
 .table th { position: static !important; top: auto !important; background: #f8fafc !important; color: #64748b !important; border-bottom: 1px solid #e2e8f0 !important; }
 .table tbody tr:hover { transform: none !important; }
+.statusColumn { min-width: 175px; white-space: nowrap; }
+.statusBadge { white-space: nowrap; overflow: visible; text-transform: none; }
 .pagination { padding: 16px 20px; border-top: 1px solid #edf0f4; }
 @media (max-width: 48em) { .commandBar { position: static; } .search { max-width: none; width: 100%; } .pagination { align-items: flex-start; flex-direction: column; } }

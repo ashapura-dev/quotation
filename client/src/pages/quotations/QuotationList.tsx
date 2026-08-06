@@ -15,7 +15,6 @@ import {
   Title,
   Tooltip,
   ThemeIcon,
-  Loader,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -26,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { deleteQuotation, exportQuotationsUrl, fetchQuotations, type QuotationFilters } from "../../api/quotations";
 import { fetchCustomFields } from "../../api/customFields";
 import { useAuth } from "../../hooks/useAuth";
+import { DataTable, type DataTableColumn } from "../../components/DataTable";
 import styles from "./QuotationList.module.css";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -35,6 +35,15 @@ const STATUS_COLOR: Record<string, string> = {
   SENT_TO_CLIENT: "indigo",
   APPROVED_BY_CLIENT: "green",
   REJECTED_BY_CLIENT: "red",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Draft",
+  PENDING: "Pending Review",
+  APPROVED: "Approved",
+  SENT_TO_CLIENT: "Sent to Client",
+  APPROVED_BY_CLIENT: "Approved by Client",
+  REJECTED_BY_CLIENT: "Rejected by Client",
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
@@ -105,6 +114,19 @@ export function QuotationList() {
   }
 
   const filterableFields = customFieldsQuery.data?.filter((f) => f.showInFilter) ?? [];
+  const listFields = customFieldsQuery.data?.filter((field) => field.showInList) ?? [];
+  const tableColumns: DataTableColumn[] = [
+    { key: "number", header: "Number" },
+    { key: "client", header: "Client" },
+    { key: "type", header: "Type" },
+    { key: "status", header: "Status", className: styles.statusColumn },
+    { key: "total", header: "Grand total" },
+    { key: "createdBy", header: "Created by" },
+    { key: "approvedBy", header: "Approved by" },
+    { key: "date", header: "Date" },
+    ...listFields.map((field) => ({ key: `custom-${field.name}`, header: field.label })),
+    { key: "actions", header: "Actions" },
+  ];
 
   const inputStyles = {
     input: {
@@ -455,38 +477,8 @@ export function QuotationList() {
         </Box>
         {sidebarFilterCount > 0 && <Badge variant="light" leftSection={<IconFilter size={12} />}>{sidebarFilterCount} active filters</Badge>}
       </Group>
-      <Table.ScrollContainer minWidth={1180}>
-      <Table striped highlightOnHover verticalSpacing="sm" className={styles.table}>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Number</Table.Th>
-            <Table.Th>Client</Table.Th>
-            <Table.Th>Type</Table.Th>
-            <Table.Th>Status</Table.Th>
-            <Table.Th>Grand total</Table.Th>
-            <Table.Th>Created by</Table.Th>
-            <Table.Th>Approved by</Table.Th>
-            <Table.Th>Date</Table.Th>
-            {customFieldsQuery.data?.filter((f) => f.showInList).map((f) => (
-              <Table.Th key={f.name}>{f.label}</Table.Th>
-            ))}
-            <Table.Th>Actions</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {query.isPending ? (
-            <Table.Tr>
-              <Table.Td
-                colSpan={9 + (customFieldsQuery.data?.filter((f) => f.showInList).length || 0)}
-                style={{ height: 200 }}
-              >
-                <Group justify="center" align="center" style={{ height: "100%" }}>
-                  <Loader size="md" />
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ) : (
-            query.data?.quotations.map((q) => {
+      <DataTable columns={tableColumns} loading={query.isPending} minWidth={1180} className={styles.table}>
+            {query.data?.quotations.map((q) => {
               const canDelete =
                 user?.role === "SUPER_ADMIN" || (user?.id === q.createdById && q.status === "DRAFT");
               const canEdit =
@@ -501,14 +493,16 @@ export function QuotationList() {
                   </Table.Td>
                   <Table.Td>{q.clientName}</Table.Td>
                   <Table.Td>{q.quotationType}</Table.Td>
-                  <Table.Td>
-                    <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
+                  <Table.Td className={styles.statusColumn}>
+                    <Badge color={STATUS_COLOR[q.status]} variant="light" size="md" className={styles.statusBadge}>
+                      {STATUS_LABEL[q.status] ?? q.status.replaceAll("_", " ")}
+                    </Badge>
                   </Table.Td>
                   <Table.Td>{q.grandTotal.toFixed(2)}</Table.Td>
                   <Table.Td>{q.createdBy?.name}</Table.Td>
                   <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
                   <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
-                  {customFieldsQuery.data?.filter((f) => f.showInList).map((f) => {
+                  {listFields.map((f) => {
                     const val = f.isDefault
                       ? (q as any)[f.name]
                       : (q.customFields as Record<string, any>)?.[f.name];
@@ -563,11 +557,8 @@ export function QuotationList() {
                   </Table.Td>
                 </Table.Tr>
               );
-            })
-          )}
-        </Table.Tbody>
-      </Table>
-      </Table.ScrollContainer>
+            })}
+      </DataTable>
 
       {query.data?.quotations.length === 0 && (
         <Stack align="center" gap={8} py={50}>
