@@ -139,11 +139,30 @@ router.get(
       };
     });
 
+    const DEFAULT_FIELD_NAMES = [
+      "location",
+      "route",
+      "title",
+      "servicesOffered",
+      "commodityType",
+      "containerDetails",
+      "additionalRemarks",
+      "notes",
+      "clientAddress",
+      "clientGstin",
+      "clientContactPerson",
+      "clientPhone",
+      "clientEmail",
+    ];
+
     for (const q of quotations) {
       const rowData: Record<string, any> = {};
       activeKeys.forEach(key => {
         if (AVAILABLE_COLUMNS[key]) {
           rowData[key] = AVAILABLE_COLUMNS[key].getValue(q);
+        } else if (DEFAULT_FIELD_NAMES.includes(key)) {
+          const val = (q as any)[key];
+          rowData[key] = val !== undefined && val !== null ? String(val) : "-";
         } else {
           const customVal = (q.customFields as Record<string, any>)?.[key];
           rowData[key] = customVal !== undefined && customVal !== null ? String(customVal) : "-";

@@ -268,7 +268,7 @@ export function QuotationList() {
                   <Table.Td>{q.approvedBy?.name ?? "-"}</Table.Td>
                   <Table.Td>{new Date(q.createdAt).toLocaleDateString()}</Table.Td>
                   {customFieldsQuery.data?.filter(f => f.showInList).map(f => {
-                    const val = (q.customFields as Record<string, any>)?.[f.name];
+                    const val = f.isDefault ? (q as any)[f.name] : (q.customFields as Record<string, any>)?.[f.name];
                     let displayVal = "-";
                     if (val !== undefined && val !== null) {
                       if (f.type === "BOOLEAN") {

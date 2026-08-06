@@ -400,17 +400,37 @@ function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
     };
   }
 
+  const DEFAULT_FIELD_NAMES = [
+    "location",
+    "route",
+    "title",
+    "servicesOffered",
+    "commodityType",
+    "containerDetails",
+    "additionalRemarks",
+    "notes",
+    "clientAddress",
+    "clientGstin",
+    "clientContactPerson",
+    "clientPhone",
+    "clientEmail",
+  ];
+
   if (filters.customFieldFilters && Object.keys(filters.customFieldFilters).length > 0) {
     const andArray: any[] = [];
     Object.entries(filters.customFieldFilters).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== "") {
-        const parsedVal = parseQueryValue(val);
-        andArray.push({
-          customFields: {
-            path: [key],
-            equals: parsedVal,
-          }
-        });
+        if (DEFAULT_FIELD_NAMES.includes(key)) {
+          (where as any)[key] = { contains: String(val) };
+        } else {
+          const parsedVal = parseQueryValue(val);
+          andArray.push({
+            customFields: {
+              path: [key],
+              equals: parsedVal,
+            }
+          });
+        }
       }
     });
     if (andArray.length > 0) {

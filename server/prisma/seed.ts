@@ -195,6 +195,43 @@ Payment terms – Third party complete advance // rest within 15 days from date 
     },
   });
 
+  const defaultFields = [
+    { name: "location", label: "Location" },
+    { name: "route", label: "Route" },
+    { name: "title", label: "Title" },
+    { name: "servicesOffered", label: "Services Offered" },
+    { name: "commodityType", label: "Commodity Type" },
+    { name: "containerDetails", label: "Container Details" },
+    { name: "additionalRemarks", label: "Additional Remarks" },
+    { name: "notes", label: "Notes" },
+    { name: "clientAddress", label: "Client Address" },
+    { name: "clientGstin", label: "Client GSTIN" },
+    { name: "clientContactPerson", label: "Client Contact Person" },
+    { name: "clientPhone", label: "Client Phone" },
+    { name: "clientEmail", label: "Client Email" },
+  ];
+
+  for (const field of defaultFields) {
+    await prisma.customField.upsert({
+      where: { name: field.name },
+      update: {
+        isDefault: true,
+      },
+      create: {
+        name: field.name,
+        label: field.label,
+        type: "TEXT",
+        required: false,
+        isDefault: true,
+        isActive: true,
+        showInPdf: true,
+        showInFilter: false,
+        showInExport: true,
+        showInList: false,
+      },
+    });
+  }
+
   console.log(`Seeded admin user: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD} (change this password after first login)`);
 }
 

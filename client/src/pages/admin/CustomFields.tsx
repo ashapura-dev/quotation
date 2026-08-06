@@ -34,6 +34,7 @@ export function CustomFields() {
       showInFilter: true,
       showInExport: true,
       showInList: true,
+      isDefault: false,
     },
   });
 
@@ -83,6 +84,7 @@ export function CustomFields() {
       showInFilter: true,
       showInExport: true,
       showInList: true,
+      isDefault: false,
     });
     setNewOption("");
     setOptionsList([]);
@@ -101,6 +103,7 @@ export function CustomFields() {
       showInFilter: field.showInFilter,
       showInExport: field.showInExport,
       showInList: field.showInList,
+      isDefault: field.isDefault,
     });
     const opts = field.options ? field.options.split(",").map(o => o.trim()).filter(Boolean) : [];
     setOptionsList(opts);
@@ -159,10 +162,17 @@ export function CustomFields() {
           ) : (
             query.data?.map((field) => (
               <Table.Tr key={field.id}>
-                <Table.Td fw={500}>{field.label}</Table.Td>
+                <Table.Td fw={500}>
+                  <Group gap="xs">
+                    <span>{field.label}</span>
+                    {field.isDefault && (
+                      <Badge size="xs" color="gray" variant="light">System</Badge>
+                    )}
+                  </Group>
+                </Table.Td>
                 <Table.Td style={{ fontFamily: "monospace", fontSize: "12px" }}>{field.name}</Table.Td>
-                <Table.Td>{field.type}</Table.Td>
-                <Table.Td>{field.required ? "Yes" : "No"}</Table.Td>
+                <Table.Td>{field.isDefault ? "System Text" : field.type}</Table.Td>
+                <Table.Td>{field.isDefault ? "No" : (field.required ? "Yes" : "No")}</Table.Td>
                 <Table.Td>{field.type === "SELECT" ? field.options || "-" : "-"}</Table.Td>
                 <Table.Td>{field.showInPdf ? "Yes" : "No"}</Table.Td>
                 <Table.Td>{field.showInList ? "Yes" : "No"}</Table.Td>
@@ -174,19 +184,21 @@ export function CustomFields() {
                     <ActionIcon variant="subtle" onClick={() => openEdit(field)}>
                       <IconPencil size={16} />
                     </ActionIcon>
-                    <Tooltip label="Delete">
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => {
-                          if (window.confirm(`Are you sure you want to delete the custom field "${field.label}"?`)) {
-                            deleteMutation.mutate(field.id);
-                          }
-                        }}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    {!field.isDefault && (
+                      <Tooltip label="Delete">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete the custom field "${field.label}"?`)) {
+                              deleteMutation.mutate(field.id);
+                            }
+                          }}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
                   </Group>
                 </Table.Td>
               </Table.Tr>
@@ -195,24 +207,26 @@ export function CustomFields() {
         </Table.Tbody>
       </Table>
 
-      <Modal opened={opened} onClose={close} title={editing ? "Edit Custom Field" : "Add Custom Field"}>
+      <Modal opened={opened} onClose={close} title={form.values.isDefault ? "Edit System Field" : (editing ? "Edit Custom Field" : "Add Custom Field")}>
         <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}>
           <Stack>
             <TextInput label="Label" placeholder="e.g. Vessel Name" required {...form.getInputProps("label")} />
             
-            <Select
-              label="Type"
-              required
-              data={[
-                { value: "TEXT", label: "Text Input" },
-                { value: "NUMBER", label: "Number Input" },
-                { value: "BOOLEAN", label: "Yes/No Toggle" },
-                { value: "SELECT", label: "Dropdown Selection" },
-              ]}
-              {...form.getInputProps("type")}
-            />
+            {!form.values.isDefault && (
+              <Select
+                label="Type"
+                required
+                data={[
+                  { value: "TEXT", label: "Text Input" },
+                  { value: "NUMBER", label: "Number Input" },
+                  { value: "BOOLEAN", label: "Yes/No Toggle" },
+                  { value: "SELECT", label: "Dropdown Selection" },
+                ]}
+                {...form.getInputProps("type")}
+              />
+            )}
 
-            {form.values.type === "SELECT" && (
+            {!form.values.isDefault && form.values.type === "SELECT" && (
               <Card withBorder p="sm" mt="xs" radius="md" style={{ background: "#f8fafc" }}>
                 <Text size="sm" fw={600} mb="xs">
                   Dropdown Options
@@ -260,12 +274,14 @@ export function CustomFields() {
               </Card>
             )}
 
-            <Switch
-              label="Required Field"
-              checked={form.values.required}
-              onChange={(event) => form.setFieldValue("required", event.currentTarget.checked)}
-              mt="xs"
-            />
+            {!form.values.isDefault && (
+              <Switch
+                label="Required Field"
+                checked={form.values.required}
+                onChange={(event) => form.setFieldValue("required", event.currentTarget.checked)}
+                mt="xs"
+              />
+            )}
 
             <Switch
               label="Show in PDF Template"
@@ -295,7 +311,7 @@ export function CustomFields() {
               mt="xs"
             />
 
-            {editing && (
+            {editing && !form.values.isDefault && (
               <Switch
                 label="Is Active"
                 checked={form.values.isActive}

@@ -12,6 +12,7 @@ export interface CustomField {
   showInFilter: boolean;
   showInExport: boolean;
   showInList: boolean;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }

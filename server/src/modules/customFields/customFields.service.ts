@@ -90,6 +90,22 @@ export async function updateCustomField(
     throw new HttpError(404, "Custom field not found.");
   }
 
+  if (field.isDefault) {
+    const data: any = {
+      showInPdf: input.showInPdf,
+      showInFilter: input.showInFilter,
+      showInExport: input.showInExport,
+      showInList: input.showInList,
+    };
+    if (input.label !== undefined) {
+      data.label = input.label;
+    }
+    return prisma.customField.update({
+      where: { id },
+      data,
+    });
+  }
+
   const data: any = {
     required: input.required,
     options: input.options,
@@ -126,6 +142,10 @@ export async function deleteCustomField(id: number) {
   const field = await prisma.customField.findUnique({ where: { id } });
   if (!field) {
     throw new HttpError(404, "Custom field not found.");
+  }
+
+  if (field.isDefault) {
+    throw new HttpError(400, "Default system fields cannot be deleted.");
   }
 
   // Check if this field is used in any quotation
