@@ -40,7 +40,7 @@ import {
   IconTypography,
   IconX,
 } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createCustomField,
   deleteCustomField,
@@ -65,6 +65,9 @@ const TYPE_META: Record<FieldType, { label: string; description: string; color: 
 const TYPE_OPTIONS = Object.entries(TYPE_META).map(([value, meta]) => ({ value, label: meta.label }));
 const FILTERABLE_CORE_FIELDS = new Set(["quotationType", "status", "createdAt"]);
 
+const SCROLL_ZONE = 80;  // px from top/bottom edge that triggers scroll
+const SCROLL_SPEED = 12; // px per animation frame
+
 export function CustomFields() {
   const queryClient = useQueryClient();
   const [opened, { open, close }] = useDisclosure(false);
@@ -74,6 +77,48 @@ export function CustomFields() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>("all");
   const [draggedId, setDraggedId] = useState<number | null>(null);
+
+  // Auto-scroll state
+  const scrollRafRef = useRef<number | null>(null);
+  const scrollDirectionRef = useRef<-1 | 0 | 1>(0);
+
+  function startAutoScroll(direction: -1 | 1) {
+    scrollDirectionRef.current = direction;
+    if (scrollRafRef.current !== null) return; // already running
+    const tick = () => {
+      if (scrollDirectionRef.current === 0) {
+        scrollRafRef.current = null;
+        return;
+      }
+      window.scrollBy(0, scrollDirectionRef.current * SCROLL_SPEED);
+      scrollRafRef.current = requestAnimationFrame(tick);
+    };
+    scrollRafRef.current = requestAnimationFrame(tick);
+  }
+
+  function stopAutoScroll() {
+    scrollDirectionRef.current = 0;
+    if (scrollRafRef.current !== null) {
+      cancelAnimationFrame(scrollRafRef.current);
+      scrollRafRef.current = null;
+    }
+  }
+
+  // Clean up RAF on unmount
+  useEffect(() => () => stopAutoScroll(), []);
+
+  function handleDragOver(event: React.DragEvent) {
+    event.preventDefault();
+    const y = event.clientY;
+    const vh = window.innerHeight;
+    if (y < SCROLL_ZONE) {
+      startAutoScroll(-1);
+    } else if (y > vh - SCROLL_ZONE) {
+      startAutoScroll(1);
+    } else {
+      stopAutoScroll();
+    }
+  }
 
   const query = useQuery({ queryKey: ["custom-fields", true], queryFn: () => fetchCustomFields(true) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["custom-fields"] });
@@ -296,9 +341,9 @@ export function CustomFields() {
                     key={field.id}
                     draggable={!search && statusFilter === "all"}
                     onDragStart={() => setDraggedId(field.id)}
-                    onDragEnd={() => setDraggedId(null)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => dropField(field.id)}
+                    onDragEnd={() => { setDraggedId(null); stopAutoScroll(); }}
+                    onDragOver={handleDragOver}
+                    onDrop={() => { stopAutoScroll(); dropField(field.id); }}
                     className={`${!field.isActive ? styles.inactiveRow : ""} ${draggedId === field.id ? styles.draggingRow : ""}`}
                   >
                     <Table.Td>
