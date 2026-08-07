@@ -1,11 +1,16 @@
-import { AppShell, Burger, Group, NavLink, Text, Button, Avatar, Menu, Stack } from "@mantine/core";
+import { AppShell, Burger, Group, NavLink, Text, Button, Avatar, Menu, Stack, Modal, PasswordInput, Divider, Box, ThemeIcon } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { useForm } from "@mantine/form";
+import { notifications } from "@mantine/notifications";
+import { useMutation } from "@tanstack/react-query";
 import {
   IconBoxSeam,
   IconFileText,
+  IconKey,
   IconLayoutDashboard,
   IconLogout,
   IconSettings,
+  IconShieldLock,
   IconTags,
   IconUsers,
   IconUsersGroup,
@@ -14,9 +19,11 @@ import { NavLink as RouterNavLink, Outlet, useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth";
 import { RoleGate } from "./RoleGate";
 import { NotificationBell } from "./NotificationBell";
+import { changeOwnPassword } from "../api/auth";
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
+  const [pwOpened, { open: openPw, close: closePw }] = useDisclosure(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -25,7 +32,30 @@ export function AppLayout() {
     navigate("/login");
   }
 
+  const pwForm = useForm({
+    initialValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+    validate: {
+      currentPassword: (v) => (v.length < 1 ? "Required" : null),
+      newPassword: (v) => (v.length < 8 ? "At least 8 characters" : null),
+      confirmPassword: (v, values) => (v !== values.newPassword ? "Passwords do not match" : null),
+    },
+  });
+
+  const changePwMutation = useMutation({
+    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+      changeOwnPassword(currentPassword, newPassword),
+    onSuccess: async () => {
+      notifications.show({ color: "teal", title: "Password changed", message: "Please log in again with your new password." });
+      closePw();
+      pwForm.reset();
+      await logout();
+      navigate("/login");
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Could not change password", message: err.message }),
+  });
+
   return (
+    <>
     <AppShell
       header={{ height: 60 }}
       navbar={{ width: 250, breakpoint: "sm", collapsed: { mobile: !opened } }}
@@ -65,6 +95,11 @@ export function AppLayout() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Label>Account</Menu.Label>
+                <Menu.Item leftSection={<IconKey size={16} />} onClick={openPw}>
+                  Change password
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Item leftSection={<IconLogout size={16} />} onClick={handleLogout} color="red">
                   Log out
                 </Menu.Item>
@@ -222,5 +257,60 @@ export function AppLayout() {
         <Outlet />
       </AppShell.Main>
     </AppShell>
+
+    <Modal
+      opened={pwOpened}
+      onClose={() => { closePw(); pwForm.reset(); }}
+      title={null}
+      withCloseButton={false}
+      size="sm"
+      radius="lg"
+      padding={0}
+      centered
+    >
+      <Box
+        style={{
+          padding: "24px 28px 20px",
+          borderBottom: "1px solid #edf0f4",
+          background: "linear-gradient(145deg,#f8fbff,#fff)",
+          borderRadius: "var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0",
+        }}
+      >
+        <Group gap="sm" wrap="nowrap">
+          <ThemeIcon size={42} radius="md" variant="light" color="blue">
+            <IconShieldLock size={22} />
+          </ThemeIcon>
+          <Box>
+            <Text fw={700} size="lg" lh={1.2}>Change password</Text>
+            <Text size="sm" c="dimmed" mt={2}>Enter your current password to confirm.</Text>
+          </Box>
+        </Group>
+      </Box>
+      <form onSubmit={pwForm.onSubmit((v) => changePwMutation.mutate({ currentPassword: v.currentPassword, newPassword: v.newPassword }))}>
+        <Stack gap="md" p="xl">
+          <PasswordInput
+            label="Current password"
+            placeholder="Your existing password"
+            {...pwForm.getInputProps("currentPassword")}
+          />
+          <Divider label="New password" labelPosition="left" />
+          <PasswordInput
+            label="New password"
+            placeholder="At least 8 characters"
+            {...pwForm.getInputProps("newPassword")}
+          />
+          <PasswordInput
+            label="Confirm new password"
+            placeholder="Repeat new password"
+            {...pwForm.getInputProps("confirmPassword")}
+          />
+        </Stack>
+        <Group justify="flex-end" style={{ padding: "14px 28px", borderTop: "1px solid #e9edf2", background: "#f8fafc", borderRadius: "0 0 var(--mantine-radius-lg) var(--mantine-radius-lg)" }}>
+          <Button variant="default" onClick={() => { closePw(); pwForm.reset(); }}>Cancel</Button>
+          <Button type="submit" loading={changePwMutation.isPending}>Update password</Button>
+        </Group>
+      </form>
+    </Modal>
+    </>
   );
 }
