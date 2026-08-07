@@ -40,7 +40,24 @@ import {
   IconTypography,
   IconX,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   createCustomField,
   deleteCustomField,
@@ -65,9 +82,6 @@ const TYPE_META: Record<FieldType, { label: string; description: string; color: 
 const TYPE_OPTIONS = Object.entries(TYPE_META).map(([value, meta]) => ({ value, label: meta.label }));
 const FILTERABLE_CORE_FIELDS = new Set(["quotationType", "status", "createdAt"]);
 
-const SCROLL_ZONE = 80;  // px from top/bottom edge that triggers scroll
-const SCROLL_SPEED = 12; // px per animation frame
-
 export function CustomFields() {
   const queryClient = useQueryClient();
   const [opened, { open, close }] = useDisclosure(false);
@@ -76,49 +90,14 @@ export function CustomFields() {
   const [optionsList, setOptionsList] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>("all");
-  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  // Optimistic local order: set immediately on drop so the list
+  // is already in the right position before the server responds.
+  const [localOrder, setLocalOrder] = useState<number[] | null>(null);
 
-  // Auto-scroll state
-  const scrollRafRef = useRef<number | null>(null);
-  const scrollDirectionRef = useRef<-1 | 0 | 1>(0);
-
-  function startAutoScroll(direction: -1 | 1) {
-    scrollDirectionRef.current = direction;
-    if (scrollRafRef.current !== null) return; // already running
-    const tick = () => {
-      if (scrollDirectionRef.current === 0) {
-        scrollRafRef.current = null;
-        return;
-      }
-      window.scrollBy(0, scrollDirectionRef.current * SCROLL_SPEED);
-      scrollRafRef.current = requestAnimationFrame(tick);
-    };
-    scrollRafRef.current = requestAnimationFrame(tick);
-  }
-
-  function stopAutoScroll() {
-    scrollDirectionRef.current = 0;
-    if (scrollRafRef.current !== null) {
-      cancelAnimationFrame(scrollRafRef.current);
-      scrollRafRef.current = null;
-    }
-  }
-
-  // Clean up RAF on unmount
-  useEffect(() => () => stopAutoScroll(), []);
-
-  function handleDragOver(event: React.DragEvent) {
-    event.preventDefault();
-    const y = event.clientY;
-    const vh = window.innerHeight;
-    if (y < SCROLL_ZONE) {
-      startAutoScroll(-1);
-    } else if (y > vh - SCROLL_ZONE) {
-      startAutoScroll(1);
-    } else {
-      stopAutoScroll();
-    }
-  }
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   const query = useQuery({ queryKey: ["custom-fields", true], queryFn: () => fetchCustomFields(true) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["custom-fields"] });
@@ -183,16 +162,33 @@ export function CustomFields() {
 
   const reorderMutation = useMutation({
     mutationFn: reorderCustomFields,
-    onSuccess: () => invalidate(),
-    onError: (err: Error) => notifications.show({ color: "red", title: "Could not reorder fields", message: err.message }),
+    onSuccess: async () => {
+      // Await the refetch so server has the new order in cache
+      // BEFORE we clear localOrder. Without this, clearing localOrder
+      // would briefly revert to the old server data → snap-back flash.
+      await queryClient.invalidateQueries({ queryKey: ["custom-fields"] });
+      setLocalOrder(null);
+    },
+    onError: (err: Error) => {
+      setLocalOrder(null); // roll back optimistic update on failure
+      notifications.show({ color: "red", title: "Could not reorder fields", message: err.message });
+    },
   });
 
   const fields = query.data ?? [];
-  const filteredFields = useMemo(() => fields.filter((field) => {
+
+  // Apply local optimistic order when available, otherwise use server order.
+  const orderedFields = useMemo(() => {
+    if (!localOrder) return query.data ?? [];
+    const map = new Map((query.data ?? []).map((f) => [f.id, f]));
+    return localOrder.map((id) => map.get(id)).filter(Boolean) as typeof fields;
+  }, [query.data, localOrder]);
+
+  const filteredFields = useMemo(() => orderedFields.filter((field) => {
     const matchesSearch = `${field.label} ${field.name} ${field.type}`.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? field.isActive : !field.isActive);
     return matchesSearch && matchesStatus;
-  }), [fields, search, statusFilter]);
+  }), [orderedFields, search, statusFilter]);
 
   const stats = {
     total: fields.length,
@@ -259,17 +255,35 @@ export function CustomFields() {
     toggleMutation.mutate({ id: field.id, patch: { [key]: value } });
   }
 
-  function dropField(targetId: number) {
-    if (draggedId === null || draggedId === targetId) return setDraggedId(null);
-    const orderedIds = fields.map((field) => field.id);
-    const from = orderedIds.indexOf(draggedId);
-    const to = orderedIds.indexOf(targetId);
-    if (from < 0 || to < 0) return setDraggedId(null);
-    const [moved] = orderedIds.splice(from, 1);
-    orderedIds.splice(to, 0, moved);
-    reorderMutation.mutate(orderedIds);
-    setDraggedId(null);
+  const canDrag = !search && statusFilter === "all";
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as number);
   }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      setActiveId(null);
+      return;
+    }
+    const orderedIds = orderedFields.map((f) => f.id);
+    const oldIndex = orderedIds.indexOf(active.id as number);
+    const newIndex = orderedIds.indexOf(over.id as number);
+    if (oldIndex < 0 || newIndex < 0) {
+      setActiveId(null);
+      return;
+    }
+    const reordered = arrayMove(orderedIds, oldIndex, newIndex);
+    // Set local order BEFORE clearing activeId so React 18 batches both
+    // into one render. The rows are already in final positions when the
+    // ghost starts its fade-out — nothing moves, no flutter.
+    setLocalOrder(reordered);
+    setActiveId(null);
+    reorderMutation.mutate(reordered);
+  }
+
+  const activeField = activeId != null ? orderedFields.find((f) => f.id === activeId) : null;
 
   return (
     <Stack gap="xl" className={styles.page}>
@@ -319,7 +333,13 @@ export function CustomFields() {
         <Divider />
 
         <Box className={styles.tableWrap}>
-          <DataTable columns={tableColumns} loading={query.isPending} minWidth={1100} verticalSpacing="md">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <DataTable columns={tableColumns} loading={query.isPending} minWidth={1100} verticalSpacing="md">
               {filteredFields.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={9}>
@@ -333,53 +353,49 @@ export function CustomFields() {
                     </Center>
                   </Table.Td>
                 </Table.Tr>
-              ) : filteredFields.map((field) => {
-                const meta = TYPE_META[field.type];
-                const TypeIcon = meta.icon;
-                return (
-                  <Table.Tr
-                    key={field.id}
-                    draggable={!search && statusFilter === "all"}
-                    onDragStart={() => setDraggedId(field.id)}
-                    onDragEnd={() => { setDraggedId(null); stopAutoScroll(); }}
-                    onDragOver={handleDragOver}
-                    onDrop={() => { stopAutoScroll(); dropField(field.id); }}
-                    className={`${!field.isActive ? styles.inactiveRow : ""} ${draggedId === field.id ? styles.draggingRow : ""}`}
-                  >
-                    <Table.Td>
-                      <Group gap="sm" wrap="nowrap">
-                        <IconGripVertical size={17} className={styles.dragHandle} />
-                        <ThemeIcon variant="light" color={field.isDefault ? "gray" : meta.color} size={38} radius="md"><TypeIcon size={19} /></ThemeIcon>
-                        <Box>
-                          <Group gap={7} wrap="nowrap">
-                            <Text fw={600}>{field.label}</Text>
-                            {field.category === "CORE" && <Badge size="xs" variant="light" color="violet">Core</Badge>}
-                            {field.category === "SYSTEM" && <Badge size="xs" variant="light" color="gray">System</Badge>}
-                          </Group>
-                          <Text size="xs" c="dimmed">{field.name}</Text>
-                        </Box>
-                      </Group>
-                    </Table.Td>
-                    <Table.Td><Badge variant="light" color={field.isDefault ? "gray" : meta.color}>{field.isDefault ? "System text" : meta.label}</Badge></Table.Td>
-                    <Table.Td>
-                      <Switch size="sm" checked={!field.isDefault && field.required} disabled={field.isDefault} onChange={(event) => toggle(field, "required", event.currentTarget.checked)} aria-label={`Make ${field.label} required`} />
-                    </Table.Td>
-                    <Table.Td><Switch size="sm" checked={field.showInPdf} disabled={field.isDefault} onChange={(event) => toggle(field, "showInPdf", event.currentTarget.checked)} aria-label={`Show ${field.label} in PDF`} /></Table.Td>
-                    <Table.Td><Switch size="sm" checked={field.showInList} onChange={(event) => toggle(field, "showInList", event.currentTarget.checked)} aria-label={`Show ${field.label} in list`} /></Table.Td>
-                    <Table.Td><Switch size="sm" checked={field.showInFilter} disabled={field.category === "CORE" && !FILTERABLE_CORE_FIELDS.has(field.name)} onChange={(event) => toggle(field, "showInFilter", event.currentTarget.checked)} aria-label={`Show ${field.label} in filters`} /></Table.Td>
-                    <Table.Td><Switch size="sm" checked={field.showInExport} onChange={(event) => toggle(field, "showInExport", event.currentTarget.checked)} aria-label={`Include ${field.label} in export`} /></Table.Td>
-                    <Table.Td><Badge variant="dot" color={field.isActive ? "teal" : "gray"}>{field.isActive ? "Active" : "Inactive"}</Badge></Table.Td>
-                    <Table.Td>
-                      <Group justify="flex-end" gap={6} wrap="nowrap">
-                        {field.category !== "CORE" && <Tooltip label="Edit field"><ActionIcon variant="subtle" color="gray" onClick={() => openEdit(field)} aria-label={`Edit ${field.label}`}><IconPencil size={17} /></ActionIcon></Tooltip>}
-                        {!field.isDefault && <Tooltip label="Delete field"><ActionIcon variant="subtle" color="red" loading={deleteMutation.isPending} onClick={() => window.confirm(`Delete “${field.label}”? This cannot be undone.`) && deleteMutation.mutate(field.id)} aria-label={`Delete ${field.label}`}><IconTrash size={17} /></ActionIcon></Tooltip>}
-                        <IconChevronRight size={16} color="#94a3b8" />
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-          </DataTable>
+              ) : (
+                <SortableContext
+                  items={canDrag ? filteredFields.map((f) => f.id) : []}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {filteredFields.map((field) => (
+                    <SortableFieldRow
+                      key={field.id}
+                      field={field}
+                      canDrag={canDrag}
+                      isOverlay={false}
+                      onEdit={openEdit}
+                      onDelete={(id) => { if (window.confirm(`Delete "${field.label}"? This cannot be undone.`)) deleteMutation.mutate(id); }}
+                      onToggle={toggle}
+                      deletePending={deleteMutation.isPending}
+                    />
+                  ))}
+                </SortableContext>
+              )}
+            </DataTable>
+
+            {/* dropAnimation=null: ghost disappears instantly on drop.
+                Since setLocalOrder + setActiveId(null) are batched in one
+                React render, rows are already in final position when the
+                ghost vanishes — clean, instant, zero flutter. */}
+            <DragOverlay dropAnimation={null}>
+              {activeField ? (
+                <Table className={styles.overlayTable} style={{ tableLayout: "fixed" }}>
+                  <Table.Tbody>
+                    <SortableFieldRow
+                      field={activeField}
+                      canDrag={false}
+                      isOverlay={true}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      onToggle={() => {}}
+                      deletePending={false}
+                    />
+                  </Table.Tbody>
+                </Table>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </Box>
         {!query.isPending && filteredFields.length > 0 && <Text size="xs" c="dimmed" px="lg" py="md">Showing {filteredFields.length} of {fields.length} fields</Text>}
       </Paper>
@@ -430,7 +446,7 @@ export function CustomFields() {
                   <Button variant="light" onClick={addOption}>Add</Button>
                 </Group>
                 <Group gap={8} mt="md">
-                  {optionsList.map((option) => <Badge key={option} size="lg" variant="white" className={styles.optionBadge} rightSection={<button type="button" className={styles.removeOption} onClick={() => removeOption(option)} aria-label={`Remove ${option}`}>×</button>}>{option}</Badge>)}
+                  {optionsList.map((option) => <Badge key={option} size="lg" variant="white" className={styles.optionBadge} rightSection={<button type="button" className={styles.removeOption} onClick={() => removeOption(option)} aria-label={`Remove ${option}`}>x</button>}>{option}</Badge>)}
                   {!optionsList.length && <Text size="xs" c="dimmed">No options added yet.</Text>}
                 </Group>
               </Paper>
@@ -438,7 +454,7 @@ export function CustomFields() {
 
             <Divider />
             <Box>
-              <Text fw={650} mb={4}>Behavior & visibility</Text>
+              <Text fw={650} mb={4}>Behavior and visibility</Text>
               <Text size="sm" c="dimmed" mb="md">Choose where this value is available throughout the app.</Text>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
                 {!form.values.isDefault && <SettingSwitch title="Required field" description="Users must provide a value" checked={form.values.required} onChange={(value) => form.setFieldValue("required", value)} />}
@@ -457,6 +473,76 @@ export function CustomFields() {
         </form>
       </Modal>
     </Stack>
+  );
+}
+
+interface RowProps {
+  field: CustomField;
+  canDrag: boolean;
+  isOverlay: boolean;
+  onEdit: (field: CustomField) => void;
+  onDelete: (id: number) => void;
+  onToggle: (field: CustomField, key: VisibilityKey | "required" | "isActive", value: boolean) => void;
+  deletePending: boolean;
+}
+
+function SortableFieldRow({ field, canDrag, isOverlay, onEdit, onDelete, onToggle, deletePending }: RowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: field.id,
+    disabled: !canDrag,
+  });
+
+  const meta = TYPE_META[field.type];
+  const TypeIcon = meta.icon;
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? undefined,
+  };
+
+  const rowClass = [
+    !field.isActive ? styles.inactiveRow : "",
+    isDragging && !isOverlay ? styles.draggingRow : "",
+    isOverlay ? styles.overlayRow : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <Table.Tr ref={setNodeRef} style={style} className={rowClass}>
+      <Table.Td>
+        <Group gap="sm" wrap="nowrap">
+          <IconGripVertical
+            size={17}
+            className={`${styles.dragHandle} ${canDrag ? styles.dragHandleActive : ""}`}
+            {...(canDrag ? { ...attributes, ...listeners } : {})}
+          />
+          <ThemeIcon variant="light" color={field.isDefault ? "gray" : meta.color} size={38} radius="md"><TypeIcon size={19} /></ThemeIcon>
+          <Box>
+            <Group gap={7} wrap="nowrap">
+              <Text fw={600}>{field.label}</Text>
+              {field.category === "CORE" && <Badge size="xs" variant="light" color="violet">Core</Badge>}
+              {field.category === "SYSTEM" && <Badge size="xs" variant="light" color="gray">System</Badge>}
+            </Group>
+            <Text size="xs" c="dimmed">{field.name}</Text>
+          </Box>
+        </Group>
+      </Table.Td>
+      <Table.Td><Badge variant="light" color={field.isDefault ? "gray" : meta.color}>{field.isDefault ? "System text" : meta.label}</Badge></Table.Td>
+      <Table.Td>
+        <Switch size="sm" checked={!field.isDefault && field.required} disabled={field.isDefault || isOverlay} onChange={(event) => onToggle(field, "required", event.currentTarget.checked)} aria-label={`Make ${field.label} required`} />
+      </Table.Td>
+      <Table.Td><Switch size="sm" checked={field.showInPdf} disabled={field.isDefault || isOverlay} onChange={(event) => onToggle(field, "showInPdf", event.currentTarget.checked)} aria-label={`Show ${field.label} in PDF`} /></Table.Td>
+      <Table.Td><Switch size="sm" checked={field.showInList} disabled={isOverlay} onChange={(event) => onToggle(field, "showInList", event.currentTarget.checked)} aria-label={`Show ${field.label} in list`} /></Table.Td>
+      <Table.Td><Switch size="sm" checked={field.showInFilter} disabled={(field.category === "CORE" && !FILTERABLE_CORE_FIELDS.has(field.name)) || isOverlay} onChange={(event) => onToggle(field, "showInFilter", event.currentTarget.checked)} aria-label={`Show ${field.label} in filters`} /></Table.Td>
+      <Table.Td><Switch size="sm" checked={field.showInExport} disabled={isOverlay} onChange={(event) => onToggle(field, "showInExport", event.currentTarget.checked)} aria-label={`Include ${field.label} in export`} /></Table.Td>
+      <Table.Td><Badge variant="dot" color={field.isActive ? "teal" : "gray"}>{field.isActive ? "Active" : "Inactive"}</Badge></Table.Td>
+      <Table.Td>
+        <Group justify="flex-end" gap={6} wrap="nowrap">
+          {field.category !== "CORE" && <Tooltip label="Edit field"><ActionIcon variant="subtle" color="gray" onClick={() => onEdit(field)} aria-label={`Edit ${field.label}`}><IconPencil size={17} /></ActionIcon></Tooltip>}
+          {!field.isDefault && <Tooltip label="Delete field"><ActionIcon variant="subtle" color="red" loading={deletePending} onClick={() => onDelete(field.id)} aria-label={`Delete ${field.label}`}><IconTrash size={17} /></ActionIcon></Tooltip>}
+          <IconChevronRight size={16} color="#94a3b8" />
+        </Group>
+      </Table.Td>
+    </Table.Tr>
   );
 }
 
