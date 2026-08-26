@@ -1,10 +1,11 @@
-import type { ComponentType } from "@ashapura/calc-engine";
+import type { ComponentType } from "../lib/calcEngine";
 import { apiClient } from "./client";
 
 export interface ContainerRate {
   id?: number;
   containerSizeId: number;
   rateValue: number;
+  textValue?: string | null;
 }
 
 export interface RateComponent {
@@ -18,6 +19,8 @@ export interface RateComponent {
   containerRates: ContainerRate[];
   isActive?: boolean;
   sourceTemplateComponentId?: number | null;
+  textValue?: string | null;
+  remark?: string | null;
 }
 
 export interface RateTemplate {
@@ -28,6 +31,7 @@ export interface RateTemplate {
   isDefault: boolean;
   isActive: boolean;
   components: RateComponent[];
+  location: string | null;
 }
 
 export async function fetchRateTemplates(quotationType?: "DPD" | "NON_DPD", includeInactive = false): Promise<RateTemplate[]> {
@@ -37,17 +41,12 @@ export async function fetchRateTemplates(quotationType?: "DPD" | "NON_DPD", incl
   return data.rateTemplates;
 }
 
-export async function fetchRateTemplate(id: number): Promise<RateTemplate> {
-  const { data } = await apiClient.get<{ rateTemplate: RateTemplate }>(`/api/rate-templates/${id}`);
-  return data.rateTemplate;
-}
-
-export async function createRateTemplate(input: { name: string; quotationType: "DPD" | "NON_DPD" }): Promise<RateTemplate> {
+export async function createRateTemplate(input: { name: string; quotationType: "DPD" | "NON_DPD"; location?: string | null }): Promise<RateTemplate> {
   const { data } = await apiClient.post<{ rateTemplate: RateTemplate }>("/api/rate-templates", input);
   return data.rateTemplate;
 }
 
-export async function updateRateTemplateMeta(id: number, input: { name?: string; isDefault?: boolean }): Promise<RateTemplate> {
+export async function updateRateTemplateMeta(id: number, input: { name?: string; isDefault?: boolean; location?: string | null }): Promise<RateTemplate> {
   const { data } = await apiClient.put<{ rateTemplate: RateTemplate }>(`/api/rate-templates/${id}`, input);
   return data.rateTemplate;
 }

@@ -22,10 +22,20 @@ export async function createUser(input: { name: string; email: string; password:
   return user;
 }
 
-export async function updateUser(id: number, input: { name?: string; role?: Role }) {
+export async function updateUser(id: number, input: { name?: string; role?: Role; password?: string }) {
+  const data: any = {
+    name: input.name,
+    role: input.role,
+  };
+
+  if (input.password) {
+    data.passwordHash = await hashPassword(input.password);
+    data.tokenVersion = { increment: 1 };
+  }
+
   return prisma.user.update({
     where: { id },
-    data: input,
+    data,
     select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
   });
 }

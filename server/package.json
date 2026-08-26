@@ -15,8 +15,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@ashapura/calc-engine": "*",
     "@prisma/client": "^5.20.0",
+    "@types/morgan": "^1.9.10",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -26,6 +26,7 @@
     "express-rate-limit": "^7.4.0",
     "handlebars": "^4.7.8",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.11.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^9.0.3",
     "puppeteer": "^23.5.0",

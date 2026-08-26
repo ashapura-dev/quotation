@@ -22,6 +22,16 @@ let browserPromise: Promise<Browser> | null = null;
 function getBrowser() {
   if (!browserPromise) {
     browserPromise = puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    browserPromise.then(
+      (browser) => {
+        browser.once("disconnected", () => {
+          browserPromise = null;
+        });
+      },
+      () => {
+        browserPromise = null;
+      }
+    );
   }
   return browserPromise;
 }
@@ -63,6 +73,7 @@ export interface PdfBranding {
   headerHtml?: string | null;
   footerHtml?: string | null;
   termsAndConditions?: string | null;
+  htmlTemplate?: string | null;
 }
 
 function brandingContext(branding: PdfBranding) {
@@ -73,6 +84,7 @@ function brandingContext(branding: PdfBranding) {
     headerHtml: branding.headerHtml ?? "",
     footerHtml: branding.footerHtml ?? "",
     termsAndConditions: branding.termsAndConditions ?? "",
+    htmlTemplate: branding.htmlTemplate ?? null,
   };
 }
 
@@ -80,6 +92,7 @@ export interface QuotationPdfLineItem {
   label: string;
   isTax: boolean;
   computedAmount: number;
+  breakdownText?: string;
 }
 
 export interface QuotationPdfContainer {
@@ -90,6 +103,17 @@ export interface QuotationPdfContainer {
 export interface QuotationPdfData {
   quotationNumber: string;
   quotationType: string;
+  showType?: boolean;
+  heading?: string;
+  route?: string | null;
+  location?: string | null;
+  title?: string | null;
+  customFields?: Array<{ label: string; value: string }>;
+  servicesOffered?: string | null;
+  commodityType?: string | null;
+  containerDetails?: string | null;
+  additionalRemarks?: string | null;
+  preparedBy?: string | null;
   status: string;
   createdAt: string | Date;
   clientName: string;
@@ -107,9 +131,18 @@ export interface QuotationPdfData {
   notes?: string | null;
 }
 
+export async function getDefaultTemplateHtml(): Promise<string> {
+  return fs.readFile(path.join(__dirname, "templates", "quotation.hbs"), "utf8");
+}
+
 export async function renderQuotationPdf(quotation: QuotationPdfData, branding: PdfBranding): Promise<Buffer> {
-  const template = await getTemplate("quotation.hbs");
-  const html = template({
+  let compiled: HandlebarsTemplateDelegate;
+  if (branding.htmlTemplate) {
+    compiled = Handlebars.compile(branding.htmlTemplate);
+  } else {
+    compiled = await getTemplate("quotation.hbs");
+  }
+  const html = compiled({
     ...quotation,
     createdAtFormatted: new Date(quotation.createdAt).toLocaleDateString(),
     logoDataUri: await logoDataUri(branding.logoPath),
@@ -118,38 +151,3 @@ export async function renderQuotationPdf(quotation: QuotationPdfData, branding: 
   return renderHtmlToPdf(html);
 }
 
-export interface InvoicePdfLineItem {
-  label: string;
-  amount: number;
-}
-
-export interface InvoicePdfData {
-  invoiceNumber: string;
-  quotationNumber?: string | null;
-  paymentStatus: string;
-  issuedAt: string | Date;
-  dueDate?: string | Date | null;
-  clientName: string;
-  clientAddress?: string | null;
-  clientContactPerson?: string | null;
-  clientPhone?: string | null;
-  clientEmail?: string | null;
-  clientGstin?: string | null;
-  lineItems: InvoicePdfLineItem[];
-  subtotal: number;
-  taxTotal: number;
-  grandTotal: number;
-}
-
-export async function renderInvoicePdf(invoice: InvoicePdfData, branding: PdfBranding): Promise<Buffer> {
-  const template = await getTemplate("invoice.hbs");
-  const html = template({
-    ...invoice,
-    issuedAtFormatted: new Date(invoice.issuedAt).toLocaleDateString(),
-    dueDateFormatted: invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : null,
-    paymentStatusClass: invoice.paymentStatus.toLowerCase(),
-    logoDataUri: await logoDataUri(branding.logoPath),
-    ...brandingContext(branding),
-  });
-  return renderHtmlToPdf(html);
-}

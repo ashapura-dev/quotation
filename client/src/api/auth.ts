@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type Role = "ADMIN" | "STAFF" | "APPROVER";
+export type Role = "SUPER_ADMIN" | "EMPLOYEE" | "TL";
 
 export interface AuthUser {
   id: number;
@@ -25,4 +25,8 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 
 export async function logout(): Promise<void> {
   await apiClient.post("/api/auth/logout");
+}
+
+export async function changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiClient.post("/api/auth/change-password", { currentPassword, newPassword });
 }

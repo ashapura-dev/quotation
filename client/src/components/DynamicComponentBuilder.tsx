@@ -1,12 +1,10 @@
 import {
   ActionIcon,
-  Badge,
   Group,
   NumberInput,
   Paper,
   Select,
   Stack,
-  Switch,
   Table,
   Text,
   TextInput,
@@ -29,8 +27,9 @@ type Row = RateComponent & { _key: string };
 
 const TYPE_OPTIONS = [
   { value: "FIXED", label: "Fixed amount" },
-  { value: "PERCENTAGE", label: "Percentage of subtotal" },
   { value: "PER_CONTAINER", label: "Per container" },
+  { value: "PER_CONTAINER_TEXT", label: "Per container (text)" },
+  { value: "TEXT", label: "Text" },
 ];
 
 function withKeys(components: RateComponent[]): Row[] {
@@ -47,6 +46,8 @@ function blankRow(): Row {
     fixedValue: 0,
     percentageValue: null,
     containerRates: [],
+    textValue: "",
+    remark: "",
   };
 }
 
@@ -77,12 +78,12 @@ export function DynamicComponentBuilder({ initialComponents, containerSizes, onC
     commit(rows.filter((r) => r._key !== key));
   }
 
-  function setContainerRate(key: string, containerSizeId: number, rateValue: number) {
+  function setContainerRate(key: string, containerSizeId: number, rateValue: number, textValue?: string) {
     commit(
       rows.map((r) => {
         if (r._key !== key) return r;
-        const existing = r.containerRates.filter((cr) => cr.containerSizeId !== containerSizeId);
-        return { ...r, containerRates: [...existing, { containerSizeId, rateValue }] };
+        const existing = r.containerRates.filter((cr) => Number(cr.containerSizeId) !== containerSizeId);
+        return { ...r, containerRates: [...existing, { containerSizeId, rateValue, textValue }] };
       }),
     );
   }
@@ -107,7 +108,7 @@ export function DynamicComponentBuilder({ initialComponents, containerSizes, onC
                 containerSizes={containerSizes}
                 onUpdate={(patch) => updateRow(row._key, patch)}
                 onRemove={() => removeRow(row._key)}
-                onSetContainerRate={(sizeId, value) => setContainerRate(row._key, sizeId, value)}
+                onSetContainerRate={(sizeId, value, text) => setContainerRate(row._key, sizeId, value, text)}
               />
             ))}
           </Stack>
@@ -137,7 +138,7 @@ function ComponentRow({
   containerSizes: ContainerSize[];
   onUpdate: (patch: Partial<Row>) => void;
   onRemove: () => void;
-  onSetContainerRate: (containerSizeId: number, rateValue: number) => void;
+  onSetContainerRate: (containerSizeId: number, rateValue: number, textValue?: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row._key });
 
@@ -173,30 +174,29 @@ function ComponentRow({
               onChange={(value) => onUpdate({ fixedValue: Number(value) || 0 })}
               w={140}
               decimalScale={2}
+              min={0}
             />
           )}
-          {row.componentType === "PERCENTAGE" && (
-            <NumberInput
-              placeholder="Percent"
-              value={row.percentageValue ?? 0}
-              onChange={(value) => onUpdate({ percentageValue: Number(value) || 0 })}
-              w={120}
-              suffix="%"
-              decimalScale={2}
+          {row.componentType === "TEXT" && (
+            <TextInput
+              placeholder="Text value"
+              value={row.textValue ?? ""}
+              onChange={(e) => onUpdate({ textValue: e.currentTarget.value })}
+              w={140}
             />
           )}
-          <Switch
-            label="Tax"
-            checked={row.isTax}
-            onChange={(e) => onUpdate({ isTax: e.currentTarget.checked })}
-            disabled={row.componentType !== "PERCENTAGE"}
+          <TextInput
+            placeholder="Remark"
+            value={row.remark ?? ""}
+            onChange={(e) => onUpdate({ remark: e.currentTarget.value })}
+            w={180}
           />
           <ActionIcon color="red" variant="subtle" onClick={onRemove}>
             <IconTrash size={16} />
           </ActionIcon>
         </Group>
 
-        {row.componentType === "PER_CONTAINER" && (
+        {(row.componentType === "PER_CONTAINER" || row.componentType === "PER_CONTAINER_TEXT") && (
           <Table withTableBorder={false} verticalSpacing={4}>
             <Table.Thead>
               <Table.Tr>
@@ -208,27 +208,30 @@ function ComponentRow({
             <Table.Tbody>
               <Table.Tr>
                 {containerSizes.map((size) => {
-                  const rate = row.containerRates.find((r) => r.containerSizeId === size.id);
+                  const rate = row.containerRates.find((r) => Number(r.containerSizeId) === size.id);
                   return (
                     <Table.Td key={size.id}>
-                      <NumberInput
-                        placeholder="Rate"
-                        value={rate?.rateValue ?? ""}
-                        onChange={(value) => onSetContainerRate(size.id, Number(value) || 0)}
-                        decimalScale={2}
-                      />
+                      {row.componentType === "PER_CONTAINER" ? (
+                        <NumberInput
+                          placeholder="Rate"
+                          value={rate?.rateValue ?? ""}
+                          onChange={(value) => onSetContainerRate(size.id, Number(value) || 0, rate?.textValue ?? undefined)}
+                          decimalScale={2}
+                          min={0}
+                        />
+                      ) : (
+                        <TextInput
+                          placeholder="Text"
+                          value={rate?.textValue ?? ""}
+                          onChange={(event) => onSetContainerRate(size.id, rate?.rateValue ?? 0, event.currentTarget.value)}
+                        />
+                      )}
                     </Table.Td>
                   );
                 })}
               </Table.Tr>
             </Table.Tbody>
           </Table>
-        )}
-
-        {row.isTax && row.componentType === "PERCENTAGE" && (
-          <Badge size="xs" color="blue" w="fit-content">
-            Counted as tax in totals
-          </Badge>
         )}
       </Stack>
     </Paper>

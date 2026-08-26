@@ -1,5 +1,6 @@
 import type { QuotationType } from "@prisma/client";
 import { prisma } from "../../config/db.js";
+import { HttpError } from "../../middleware/errorHandler.js";
 
 export interface PdfTemplateInput {
   name?: string;
@@ -10,17 +11,17 @@ export interface PdfTemplateInput {
   headerHtml?: string;
   footerHtml?: string;
   termsAndConditions?: string;
+  htmlTemplate?: string | null;
 }
 
 export function listPdfTemplates(includeInactive = false) {
   return prisma.pdfTemplate.findMany({
     where: includeInactive ? {} : { isActive: true },
-    orderBy: { name: "asc" },
+    orderBy: [
+      { isDefault: "desc" },
+      { name: "asc" },
+    ],
   });
-}
-
-export function getPdfTemplate(id: number) {
-  return prisma.pdfTemplate.findUniqueOrThrow({ where: { id } });
 }
 
 export function createPdfTemplate(createdById: number, input: PdfTemplateInput & { name: string }, logoPath?: string) {
@@ -32,7 +33,20 @@ export async function updatePdfTemplate(id: number, input: PdfTemplateInput, log
 }
 
 export async function deactivatePdfTemplate(id: number) {
-  await prisma.pdfTemplate.update({ where: { id }, data: { isActive: false, isDefault: false } });
+  const template = await prisma.pdfTemplate.findUnique({ where: { id } });
+  if (!template) {
+    throw new HttpError(404, "PDF template not found");
+  }
+  if (template.isDefault) {
+    throw new HttpError(400, "Cannot delete the default PDF template");
+  }
+
+  const usedCount = await prisma.quotation.count({ where: { pdfTemplateId: id } });
+  if (usedCount > 0) {
+    throw new HttpError(400, "Cannot delete this PDF template because it is used by one or more quotations");
+  }
+
+  await prisma.pdfTemplate.delete({ where: { id } });
 }
 
 export async function setDefaultPdfTemplate(id: number) {

@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import type { RateComponent } from "./rateTemplates";
 
-export type QuotationStatus = "DRAFT" | "PENDING" | "APPROVED" | "SENT";
+export type QuotationStatus = "DRAFT" | "PENDING" | "APPROVED" | "SENT_TO_CLIENT" | "APPROVED_BY_CLIENT" | "REJECTED_BY_CLIENT";
 export type QuotationType = "DPD" | "NON_DPD";
 
 export interface QuotationContainer {
@@ -12,7 +12,7 @@ export interface QuotationContainer {
 
 export interface QuotationLineItem extends RateComponent {
   computedAmount: number;
-  containerBreakdown?: { containerSizeId: number; label: string; quantity: number; rate: number; lineTotal: number }[];
+  containerBreakdown?: { containerSizeId: number; label: string; quantity: number; rate: number; lineTotal: number; textValue?: string }[];
 }
 
 export interface Quotation {
@@ -28,7 +28,17 @@ export interface Quotation {
   clientPhone: string | null;
   clientEmail: string | null;
   rateTemplateId: number | null;
+  rateTemplate?: { id: number; name: string } | null;
   pdfTemplateId: number | null;
+  pdfTemplate?: { id: number; name: string } | null;
+  location: string | null;
+  route: string | null;
+  title: string | null;
+  customFields: Record<string, any> | null;
+  servicesOffered: string | null;
+  commodityType: string | null;
+  containerDetails: string | null;
+  additionalRemarks: string | null;
   notes: string | null;
   subtotal: number;
   taxTotal: number;
@@ -56,6 +66,14 @@ export interface QuotationInput {
   clientEmail?: string;
   rateTemplateId?: number | null;
   pdfTemplateId?: number | null;
+  location?: string;
+  route?: string;
+  title?: string;
+  customFields?: Record<string, any>;
+  servicesOffered?: string;
+  commodityType?: string;
+  containerDetails?: string;
+  additionalRemarks?: string;
   notes?: string;
   containers: QuotationContainer[];
   components: RateComponent[];
@@ -70,6 +88,7 @@ export interface QuotationFilters {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  [key: string]: any;
 }
 
 export interface QuotationListResult {
@@ -88,9 +107,12 @@ export async function deleteQuotation(id: number): Promise<void> {
   await apiClient.delete(`/api/quotations/${id}`);
 }
 
-export function quotationPdfUrl(id: number, apiBase: string, templateId?: number | null): string {
-  const params = templateId ? `?templateId=${templateId}` : "";
-  return `${apiBase}/api/quotations/${id}/pdf${params}`;
+export function quotationPdfUrl(id: number, apiBase: string, templateId?: number | null, download = false): string {
+  const params = new URLSearchParams();
+  if (templateId) params.set("templateId", String(templateId));
+  if (download) params.set("download", "1");
+  const query = params.toString();
+  return `${apiBase}/api/quotations/${id}/pdf${query ? `?${query}` : ""}`;
 }
 
 export async function emailQuotation(id: number, input: { templateId?: number | null; toAddress?: string }): Promise<{ sentTo: string }> {
@@ -98,11 +120,12 @@ export async function emailQuotation(id: number, input: { templateId?: number | 
   return data;
 }
 
-export function exportQuotationsUrl(filters: QuotationFilters, apiBase: string): string {
+export function exportQuotationsUrl(filters: QuotationFilters, visibleColumns: string[], apiBase: string): string {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
   });
+  params.set("fields", visibleColumns.join(","));
   return `${apiBase}/api/quotations/export?${params.toString()}`;
 }
 
@@ -143,6 +166,16 @@ export async function rejectQuotation(id: number, comment: string): Promise<Quot
 
 export async function markQuotationSent(id: number): Promise<Quotation> {
   const { data } = await apiClient.post<{ quotation: Quotation }>(`/api/quotations/${id}/mark-sent`);
+  return data.quotation;
+}
+
+export async function clientApproveQuotation(id: number): Promise<Quotation> {
+  const { data } = await apiClient.post<{ quotation: Quotation }>(`/api/quotations/${id}/client-approve`);
+  return data.quotation;
+}
+
+export async function clientRejectQuotation(id: number, comment: string): Promise<Quotation> {
+  const { data } = await apiClient.post<{ quotation: Quotation }>(`/api/quotations/${id}/client-reject`, { comment });
   return data.quotation;
 }
 

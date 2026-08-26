@@ -1,6 +1,6 @@
 import type { ComponentType, QuotationStatus, QuotationType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
-import { computeQuotationTotals, type ComponentInput, type SelectedContainerInput } from "@ashapura/calc-engine";
+import { computeQuotationTotals, type ComponentInput, type SelectedContainerInput } from "../../calcEngine/index.js";
 import { prisma } from "../../config/db.js";
 import { HttpError } from "../../middleware/errorHandler.js";
 import { nextQuotationNumber } from "./numbering.js";
@@ -17,8 +17,10 @@ export interface QuotationComponentInput {
   isTax: boolean;
   fixedValue?: number | null;
   percentageValue?: number | null;
-  containerRates?: { containerSizeId: number; rateValue: number }[];
+  containerRates?: { containerSizeId: number; rateValue: number; textValue?: string | null }[];
   sourceTemplateComponentId?: number | null;
+  textValue?: string | null;
+  remark?: string | null;
 }
 
 export interface QuotationInput {
@@ -32,12 +34,20 @@ export interface QuotationInput {
   clientEmail?: string;
   rateTemplateId?: number | null;
   pdfTemplateId?: number | null;
+  location?: string | null;
+  route?: string | null;
+  title?: string | null;
+  customFields?: any;
+  servicesOffered?: string | null;
+  commodityType?: string | null;
+  containerDetails?: string | null;
+  additionalRemarks?: string | null;
   notes?: string;
   containers: QuotationContainerInput[];
   components: QuotationComponentInput[];
 }
 
-function toCalcInputs(input: QuotationInput): { components: ComponentInput[]; containers: SelectedContainerInput[] } {
+function toCalcInputs(input: QuotationInput, allSizes: any[]): { components: ComponentInput[]; containers: SelectedContainerInput[] } {
   const components: ComponentInput[] = input.components.map((c, i) => ({
     id: c.sourceTemplateComponentId ? `tpl-${c.sourceTemplateComponentId}` : `line-${i}`,
     label: c.label,
@@ -46,16 +56,21 @@ function toCalcInputs(input: QuotationInput): { components: ComponentInput[]; co
     sortOrder: i,
     fixedValue: c.fixedValue ?? undefined,
     percentageValue: c.percentageValue ?? undefined,
-    containerRates: (c.containerRates ?? []).map((r) => ({
-      containerSizeId: String(r.containerSizeId),
-      rateValue: r.rateValue,
+      containerRates: (c.containerRates ?? []).map((r) => ({
+        containerSizeId: String(r.containerSizeId),
+        rateValue: r.rateValue,
+        textValue: r.textValue ?? undefined,
     })),
+    textValue: c.textValue ?? undefined,
   }));
-  const containers: SelectedContainerInput[] = input.containers.map((c) => ({
-    containerSizeId: String(c.containerSizeId),
-    label: c.containerSizeLabel,
-    quantity: c.quantity,
-  }));
+  const containers: SelectedContainerInput[] = allSizes.map((size) => {
+    const selected = input.containers.find((c) => c.containerSizeId === size.id);
+    return {
+      containerSizeId: String(size.id),
+      label: size.label,
+      quantity: selected ? selected.quantity : 1,
+    };
+  });
   return { components, containers };
 }
 
@@ -94,9 +109,18 @@ export async function createQuotation(createdById: number, input: QuotationInput
     throw new HttpError(400, "Select at least one container for a per-container rate component to apply");
   }
 
-  const { components, containers } = toCalcInputs(input);
+  const allSizes = await prisma.containerSize.findMany({ where: { isActive: true } });
+  const { components, containers } = toCalcInputs(input, allSizes);
   const totals = computeQuotationTotals(components, containers);
   const quotationNumber = await nextQuotationNumber();
+
+  let location = input.location ?? null;
+  if (!location && input.rateTemplateId) {
+    const tmpl = await prisma.rateTemplate.findUnique({ where: { id: input.rateTemplateId } });
+    if (tmpl?.location) {
+      location = tmpl.location;
+    }
+  }
 
   const created = await prisma.quotation.create({
     data: {
@@ -112,6 +136,14 @@ export async function createQuotation(createdById: number, input: QuotationInput
       clientEmail: input.clientEmail,
       rateTemplateId: input.rateTemplateId ?? null,
       pdfTemplateId: input.pdfTemplateId ?? null,
+      location,
+      route: input.route ?? null,
+      title: input.title ?? null,
+      customFields: input.customFields ?? null,
+      servicesOffered: input.servicesOffered ?? null,
+      commodityType: input.commodityType ?? null,
+      containerDetails: input.containerDetails ?? null,
+      additionalRemarks: input.additionalRemarks ?? null,
       notes: input.notes,
       subtotal: totals.subtotal,
       taxTotal: totals.taxTotal,
@@ -136,6 +168,8 @@ export async function createQuotation(createdById: number, input: QuotationInput
           containerBreakdown: (li.containerBreakdown as Prisma.InputJsonValue | undefined) ?? undefined,
           sourceTemplateComponentId: input.components[i].sourceTemplateComponentId ?? null,
           sortOrder: li.sortOrder,
+          textValue: input.components[i].textValue ?? null,
+          remark: input.components[i].remark ?? null,
         })),
       },
     },
@@ -153,10 +187,10 @@ export async function getQuotation(id: number) {
 
 async function assertEditable(id: number, userId: number, role: string) {
   const quotation = await prisma.quotation.findFirstOrThrow({ where: { id, isDeleted: false } });
-  if (role !== "ADMIN" && quotation.createdById !== userId) {
+  if (role !== "SUPER_ADMIN" && quotation.createdById !== userId) {
     throw new HttpError(403, "You can only edit your own quotations");
   }
-  if (role !== "ADMIN" && quotation.status !== "DRAFT") {
+  if (role !== "SUPER_ADMIN" && quotation.status !== "DRAFT") {
     throw new HttpError(400, "Only Draft quotations can be edited");
   }
   return quotation;
@@ -164,14 +198,27 @@ async function assertEditable(id: number, userId: number, role: string) {
 
 export async function updateQuotation(id: number, userId: number, role: string, input: QuotationInput) {
   const existing = await assertEditable(id, userId, role);
-  const { components, containers } = toCalcInputs(input);
+  const allSizes = await prisma.containerSize.findMany({ where: { isActive: true } });
+  const { components, containers } = toCalcInputs(input, allSizes);
   const totals = computeQuotationTotals(components, containers);
 
-  const wasLocked = existing.status === "APPROVED" || existing.status === "SENT";
+  const wasLocked =
+    existing.status === "APPROVED" ||
+    existing.status === "SENT_TO_CLIENT" ||
+    existing.status === "APPROVED_BY_CLIENT" ||
+    existing.status === "REJECTED_BY_CLIENT";
 
   await prisma.$transaction(async (tx) => {
     await tx.quotationContainer.deleteMany({ where: { quotationId: id } });
     await tx.quotationLineItem.deleteMany({ where: { quotationId: id } });
+
+    let location = input.location ?? null;
+    if (!location && input.rateTemplateId) {
+      const tmpl = await tx.rateTemplate.findUnique({ where: { id: input.rateTemplateId } });
+      if (tmpl?.location) {
+        location = tmpl.location;
+      }
+    }
 
     await tx.quotation.update({
       where: { id },
@@ -186,6 +233,14 @@ export async function updateQuotation(id: number, userId: number, role: string, 
         clientEmail: input.clientEmail,
         rateTemplateId: input.rateTemplateId ?? null,
         pdfTemplateId: input.pdfTemplateId ?? null,
+        location,
+        route: input.route ?? null,
+        title: input.title ?? null,
+        customFields: input.customFields ?? null,
+        servicesOffered: input.servicesOffered ?? null,
+        commodityType: input.commodityType ?? null,
+        containerDetails: input.containerDetails ?? null,
+        additionalRemarks: input.additionalRemarks ?? null,
         notes: input.notes,
         subtotal: totals.subtotal,
         taxTotal: totals.taxTotal,
@@ -213,6 +268,8 @@ export async function updateQuotation(id: number, userId: number, role: string, 
             containerBreakdown: (li.containerBreakdown as Prisma.InputJsonValue | undefined) ?? undefined,
             sourceTemplateComponentId: input.components[i].sourceTemplateComponentId ?? null,
             sortOrder: li.sortOrder,
+            textValue: input.components[i].textValue ?? null,
+            remark: input.components[i].remark ?? null,
           })),
         },
       },
@@ -229,19 +286,6 @@ export async function updateQuotation(id: number, userId: number, role: string, 
         },
       });
 
-      const full = await tx.quotation.findUniqueOrThrow({
-        where: { id },
-        include: { containers: true, lineItems: true },
-      });
-      await tx.quotationRevision.create({
-        data: {
-          quotationId: id,
-          snapshot: JSON.parse(JSON.stringify(full)),
-          statusAtSnapshot: "DRAFT",
-          reason: "post-approval-edit",
-          createdById: userId,
-        },
-      });
     }
   });
 
@@ -269,6 +313,14 @@ export async function duplicateQuotation(sourceId: number, createdById: number) 
       clientEmail: source.clientEmail,
       rateTemplateId: source.rateTemplateId,
       pdfTemplateId: source.pdfTemplateId,
+      location: source.location,
+      route: source.route,
+      title: source.title,
+      customFields: (source.customFields as any) ?? null,
+      servicesOffered: source.servicesOffered,
+      commodityType: source.commodityType,
+      containerDetails: source.containerDetails,
+      additionalRemarks: source.additionalRemarks,
       notes: source.notes,
       subtotal: source.subtotal,
       taxTotal: source.taxTotal,
@@ -293,6 +345,8 @@ export async function duplicateQuotation(sourceId: number, createdById: number) 
           containerBreakdown: li.containerBreakdown ?? undefined,
           sourceTemplateComponentId: li.sourceTemplateComponentId,
           sortOrder: li.sortOrder,
+          textValue: li.textValue,
+          remark: li.remark,
         })),
       },
     },
@@ -311,11 +365,24 @@ export interface QuotationFilters {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  customFieldFilters?: Record<string, any>;
+}
+
+function parseQueryValue(val: any) {
+  if (val === "true") return true;
+  if (val === "false") return false;
+  if (!isNaN(Number(val)) && val.trim() !== "") return Number(val);
+  return val;
 }
 
 function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
   const where: Prisma.QuotationWhereInput = { isDeleted: false };
-  if (filters.search) where.clientName = { contains: filters.search };
+  if (filters.search) {
+    where.OR = [
+      { quotationNumber: { contains: filters.search } },
+      { clientName: { contains: filters.search } },
+    ];
+  }
   if (filters.status) where.status = filters.status as QuotationStatus;
   if (filters.quotationType) where.quotationType = filters.quotationType as QuotationType;
   if (filters.containerSizeId) where.containers = { some: { containerSizeId: filters.containerSizeId } };
@@ -325,6 +392,46 @@ function buildWhere(filters: QuotationFilters): Prisma.QuotationWhereInput {
       ...(filters.dateTo ? { lte: new Date(`${filters.dateTo}T23:59:59.999Z`) } : {}),
     };
   }
+
+  const DEFAULT_FIELD_NAMES = [
+    "clientName",
+    "location",
+    "route",
+    "title",
+    "servicesOffered",
+    "commodityType",
+    "containerDetails",
+    "additionalRemarks",
+    "notes",
+    "clientAddress",
+    "clientGstin",
+    "clientContactPerson",
+    "clientPhone",
+    "clientEmail",
+  ];
+
+  if (filters.customFieldFilters && Object.keys(filters.customFieldFilters).length > 0) {
+    const andArray: any[] = [];
+    Object.entries(filters.customFieldFilters).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== "") {
+        if (DEFAULT_FIELD_NAMES.includes(key)) {
+          (where as any)[key] = { contains: String(val) };
+        } else {
+          const parsedVal = parseQueryValue(val);
+          andArray.push({
+            customFields: {
+              path: `$.${key}`,
+              equals: parsedVal,
+            }
+          });
+        }
+      }
+    });
+    if (andArray.length > 0) {
+      where.AND = andArray;
+    }
+  }
+
   return where;
 }
 
@@ -337,7 +444,10 @@ export async function listQuotations(filters: QuotationFilters) {
     prisma.quotation.count({ where }),
     prisma.quotation.findMany({
       where,
-      include: { createdBy: { select: { id: true, name: true } } },
+      include: {
+        createdBy: { select: { id: true, name: true } },
+        approvedBy: { select: { id: true, name: true } },
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -378,7 +488,7 @@ export async function deleteQuotation(id: number, userId: number, role: string) 
   const quotation = await prisma.quotation.findFirst({ where: { id, isDeleted: false } });
   if (!quotation) throw new HttpError(404, "Quotation not found");
 
-  if (role !== "ADMIN") {
+  if (role !== "SUPER_ADMIN") {
     if (quotation.createdById !== userId) throw new HttpError(403, "You can only delete your own quotations");
     if (quotation.status !== "DRAFT") throw new HttpError(400, "Only Draft quotations can be deleted");
   }

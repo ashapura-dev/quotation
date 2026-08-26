@@ -3,10 +3,10 @@ import { z } from "zod";
 import { authenticate, requireRole } from "../../middleware/auth.js";
 import { uploadLogo } from "../../middleware/upload.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { getDefaultTemplateHtml } from "../../lib/pdf/renderer.js";
 import {
   createPdfTemplate,
   deactivatePdfTemplate,
-  getPdfTemplate,
   listPdfTemplates,
   setDefaultPdfTemplate,
   updatePdfTemplate,
@@ -23,9 +23,10 @@ router.get(
 );
 
 router.get(
-  "/:id",
+  "/default-html",
   asyncHandler(async (req, res) => {
-    res.json({ pdfTemplate: await getPdfTemplate(Number(req.params.id)) });
+    const defaultHtml = await getDefaultTemplateHtml();
+    res.json({ defaultHtml });
   }),
 );
 
@@ -38,11 +39,12 @@ const templateSchema = z.object({
   headerHtml: z.string().optional(),
   footerHtml: z.string().optional(),
   termsAndConditions: z.string().optional(),
+  htmlTemplate: z.string().optional().nullable(),
 });
 
 router.post(
   "/",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   uploadLogo.single("logo"),
   asyncHandler(async (req, res) => {
     const input = templateSchema.parse({ ...req.body, quotationType: req.body.quotationType || undefined });
@@ -53,7 +55,7 @@ router.post(
 
 router.put(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   uploadLogo.single("logo"),
   asyncHandler(async (req, res) => {
     const input = templateSchema.partial().parse({ ...req.body, quotationType: req.body.quotationType || undefined });
@@ -64,7 +66,7 @@ router.put(
 
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     await deactivatePdfTemplate(Number(req.params.id));
     res.json({ success: true });
@@ -73,7 +75,7 @@ router.delete(
 
 router.post(
   "/:id/set-default",
-  requireRole("ADMIN"),
+  requireRole("SUPER_ADMIN"),
   asyncHandler(async (req, res) => {
     res.json({ pdfTemplate: await setDefaultPdfTemplate(Number(req.params.id)) });
   }),

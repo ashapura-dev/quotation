@@ -26,7 +26,6 @@ function computePerContainerAmount(
 
   for (const container of selectedContainers) {
     const rate = rateBySize.get(container.containerSizeId);
-    // A component with no configured rate for this container size simply doesn't apply to it.
     if (rate === undefined) continue;
     breakdown.push({
       containerSizeId: container.containerSizeId,
@@ -34,6 +33,7 @@ function computePerContainerAmount(
       quantity: container.quantity,
       rate,
       lineTotal: round2(rate * container.quantity),
+      textValue: (component.containerRates ?? []).find((entry) => entry.containerSizeId === container.containerSizeId)?.textValue,
     });
   }
 
@@ -47,9 +47,6 @@ function computePerContainerAmount(
  * Percentage components are evaluated against the subtotal only (never compounded on each other
  * or on prior percentage lines) — this matches standard GST behavior, where e.g. CGST 9% and
  * SGST 9% are both computed on the same base rather than stacking on top of one another.
- *
- * This function is shared verbatim between the client (live preview) and the server
- * (authoritative recompute before every save/approve/PDF) so the two never drift apart.
  */
 export function computeQuotationTotals(
   components: ComponentInput[],
@@ -83,6 +80,37 @@ export function computeQuotationTotals(
         sortOrder: component.sortOrder,
         computedAmount: amount,
         containerBreakdown: breakdown,
+      });
+    } else if (component.componentType === "PER_CONTAINER_TEXT") {
+      const breakdown = selectedContainers.flatMap((container) => {
+        const textValue = (component.containerRates ?? []).find((rate) => rate.containerSizeId === container.containerSizeId)?.textValue;
+        return textValue === undefined ? [] : [{
+          containerSizeId: container.containerSizeId,
+          label: container.label,
+          quantity: container.quantity,
+          rate: 0,
+          lineTotal: 0,
+          textValue,
+        }];
+      });
+      fixedAndContainerItems.push({
+        id: component.id,
+        label: component.label,
+        componentType: component.componentType,
+        isTax: component.isTax,
+        sortOrder: component.sortOrder,
+        computedAmount: 0,
+        containerBreakdown: breakdown,
+      });
+    } else if (component.componentType === "TEXT") {
+      fixedAndContainerItems.push({
+        id: component.id,
+        label: component.label,
+        componentType: component.componentType,
+        isTax: component.isTax,
+        sortOrder: component.sortOrder,
+        computedAmount: 0,
+        textValue: component.textValue,
       });
     }
   }

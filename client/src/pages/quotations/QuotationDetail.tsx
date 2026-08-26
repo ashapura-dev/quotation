@@ -1,4 +1,5 @@
 import { Badge, Button, Card, Group, Modal, Select, Stack, Table, Text, Textarea, Timeline, Title } from "@mantine/core";
+import { IconDownload, IconEye } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,6 +7,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   approveQuotation,
+  clientApproveQuotation,
+  clientRejectQuotation,
   duplicateQuotation,
   emailQuotation,
   fetchQuotation,
@@ -16,8 +19,8 @@ import {
   submitQuotation,
 } from "../../api/quotations";
 import { fetchPdfTemplates } from "../../api/pdfTemplates";
-import { convertQuotationToInvoice } from "../../api/invoices";
 import { useAuth } from "../../hooks/useAuth";
+import { fetchCustomFields } from "../../api/customFields";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -25,7 +28,9 @@ const STATUS_COLOR: Record<string, string> = {
   DRAFT: "gray",
   PENDING: "yellow",
   APPROVED: "blue",
-  SENT: "green",
+  SENT_TO_CLIENT: "indigo",
+  APPROVED_BY_CLIENT: "green",
+  REJECTED_BY_CLIENT: "red",
 };
 
 export function QuotationDetail() {
@@ -35,6 +40,8 @@ export function QuotationDetail() {
   const { user } = useAuth();
   const [rejectOpened, { open: openReject, close: closeReject }] = useDisclosure(false);
   const [rejectComment, setRejectComment] = useState("");
+  const [clientRejectOpened, { open: openClientReject, close: closeClientReject }] = useDisclosure(false);
+  const [clientRejectComment, setClientRejectComment] = useState("");
   const [emailOpened, { open: openEmail, close: closeEmail }] = useDisclosure(false);
   const [emailTemplateId, setEmailTemplateId] = useState<string | null>(null);
   const [emailToAddress, setEmailToAddress] = useState("");
@@ -42,6 +49,7 @@ export function QuotationDetail() {
   const query = useQuery({ queryKey: ["quotation", id], queryFn: () => fetchQuotation(Number(id)) });
   const historyQuery = useQuery({ queryKey: ["quotation-history", id], queryFn: () => fetchStatusHistory(Number(id)) });
   const pdfTemplatesQuery = useQuery({ queryKey: ["pdf-templates", false], queryFn: () => fetchPdfTemplates(false) });
+  const customFieldsQuery = useQuery({ queryKey: ["custom-fields", true], queryFn: () => fetchCustomFields(true) });
 
   function invalidateAll() {
     queryClient.invalidateQueries({ queryKey: ["quotation", id] });
@@ -56,15 +64,6 @@ export function QuotationDetail() {
       queryClient.invalidateQueries({ queryKey: ["quotations"] });
       navigate(`/quotations/${quotation.id}`);
     },
-  });
-
-  const convertMutation = useMutation({
-    mutationFn: () => convertQuotationToInvoice(Number(id)),
-    onSuccess: (invoice) => {
-      notifications.show({ color: "green", message: `Created invoice ${invoice.invoiceNumber}` });
-      navigate(`/invoices/${invoice.id}`);
-    },
-    onError: (err: Error) => notifications.show({ color: "red", title: "Could not convert", message: err.message }),
   });
 
   const errorHandler = (label: string) => (err: Error) =>
@@ -102,10 +101,30 @@ export function QuotationDetail() {
   const markSentMutation = useMutation({
     mutationFn: () => markQuotationSent(Number(id)),
     onSuccess: () => {
-      notifications.show({ color: "green", message: "Marked as Sent" });
+      notifications.show({ color: "green", message: "Marked as Sent to Client" });
       invalidateAll();
     },
     onError: errorHandler("Could not mark as sent"),
+  });
+
+  const clientApproveMutation = useMutation({
+    mutationFn: () => clientApproveQuotation(Number(id)),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Quotation approved by client" });
+      invalidateAll();
+    },
+    onError: errorHandler("Could not record client approval"),
+  });
+
+  const clientRejectMutation = useMutation({
+    mutationFn: () => clientRejectQuotation(Number(id), clientRejectComment),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Quotation marked as rejected by client" });
+      invalidateAll();
+      closeClientReject();
+      setClientRejectComment("");
+    },
+    onError: errorHandler("Could not record client rejection"),
   });
 
   const emailMutation = useMutation({
@@ -124,26 +143,31 @@ export function QuotationDetail() {
   if (query.isLoading || !query.data) return <Text>Loading...</Text>;
   const q = query.data;
   const isOwner = user?.id === q.createdById;
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "SUPER_ADMIN";
   const canEdit = (q.status === "DRAFT" || isAdmin) && (isAdmin || isOwner);
-  const canSubmit = q.status === "DRAFT" && (isAdmin || (isOwner && user?.role === "STAFF"));
-  const canApproveReject = q.status === "PENDING" && (isAdmin || user?.role === "APPROVER");
-  const canMarkSent = q.status === "APPROVED" && (isAdmin || (isOwner && user?.role === "STAFF"));
+  const canSubmit = q.status === "DRAFT" && (isAdmin || (isOwner && (user?.role === "EMPLOYEE" || user?.role === "TL")));
+  const canApproveReject = q.status === "PENDING" && (isAdmin || user?.role === "TL");
+  const canMarkSent = q.status === "APPROVED" && (isAdmin || (isOwner && user?.role === "EMPLOYEE"));
+  const canClientApproveReject = q.status === "SENT_TO_CLIENT" && (isAdmin || user?.role === "EMPLOYEE" || user?.role === "TL" || isOwner);
 
   return (
     <div>
       <Group justify="space-between" mb="md">
         <div>
-          <Title order={2}>{q.quotationNumber}</Title>
-          <Group gap="xs" mt={4}>
+          <Title order={2}>{q.title || q.quotationNumber}</Title>
+          {q.title && <Text c="dimmed" size="sm" mt={2}>{q.quotationNumber}</Text>}
+          <Group gap="xs" mt={6}>
             <Badge color={STATUS_COLOR[q.status]}>{q.status}</Badge>
             <Text size="sm" c="dimmed">
-              {q.quotationType} · created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
+              {q.quotationType} {q.location ? `· ${q.location}` : ""} {q.route ? `· ${q.route}` : ""} · created by {q.createdBy?.name} on {new Date(q.createdAt).toLocaleDateString()}
             </Text>
           </Group>
         </div>
         <Group>
-          <Button component="a" href={quotationPdfUrl(q.id, API_BASE)} target="_blank" variant="light">
+          <Button component="a" href={quotationPdfUrl(q.id, API_BASE)} target="_blank" rel="noreferrer" variant="light" leftSection={<IconEye size={16} />}>
+            Preview PDF
+          </Button>
+          <Button component="a" href={quotationPdfUrl(q.id, API_BASE, undefined, true)} variant="light" leftSection={<IconDownload size={16} />}>
             Download PDF
           </Button>
           <Button
@@ -159,11 +183,6 @@ export function QuotationDetail() {
           <Button variant="light" onClick={() => duplicateMutation.mutate()} loading={duplicateMutation.isPending}>
             Duplicate
           </Button>
-          {(q.status === "APPROVED" || q.status === "SENT") && (
-            <Button variant="light" onClick={() => convertMutation.mutate()} loading={convertMutation.isPending}>
-              Convert to Invoice
-            </Button>
-          )}
           {canEdit && (
             <Button variant="light" onClick={() => navigate(`/quotations/${q.id}/edit`)}>
               Edit
@@ -186,8 +205,18 @@ export function QuotationDetail() {
           )}
           {canMarkSent && (
             <Button onClick={() => markSentMutation.mutate()} loading={markSentMutation.isPending}>
-              Mark as Sent
+              Mark as Sent to Client
             </Button>
+          )}
+          {canClientApproveReject && (
+            <>
+              <Button color="red" variant="light" onClick={openClientReject}>
+                Client Rejected
+              </Button>
+              <Button color="green" onClick={() => clientApproveMutation.mutate()} loading={clientApproveMutation.isPending}>
+                Client Approved
+              </Button>
+            </>
           )}
         </Group>
       </Group>
@@ -206,20 +235,88 @@ export function QuotationDetail() {
         </Group>
       </Card>
 
-      {q.containers.length > 0 && (
-        <Card mb="md">
-          <Text fw={600} mb="xs">
-            Containers
-          </Text>
-          <Group gap="lg">
-            {q.containers.map((c, i) => (
-              <Text key={i} size="sm">
-                {c.containerSizeLabel} × {c.quantity}
+      <Card mb="md">
+        <Text fw={600} mb="xs">
+          Shipment Details
+        </Text>
+        <Group gap="xl">
+          {q.servicesOffered && (
+            <div>
+              <Text size="xs" c="dimmed" fw={500}>Services Offered</Text>
+              <Text size="sm" fw={600} mt={2}>{q.servicesOffered}</Text>
+            </div>
+          )}
+          {q.commodityType && (
+            <div>
+              <Text size="xs" c="dimmed" fw={500}>Commodity Type</Text>
+              <Text size="sm" fw={600} mt={2}>{q.commodityType}</Text>
+            </div>
+          )}
+          {q.containers && q.containers.length > 0 && (
+            <div>
+              <Text size="xs" c="dimmed" fw={500}>Containers</Text>
+              <Group gap={6} mt={4}>
+                {q.containers.map((c) => (
+                  <Badge key={c.containerSizeId} variant="outline" size="sm">
+                    {c.quantity} &times; {c.containerSizeLabel}
+                  </Badge>
+                ))}
+              </Group>
+            </div>
+          )}
+        </Group>
+        {q.additionalRemarks && (
+          <div style={{ marginTop: "12px", borderTop: "1px solid #E2E8F0", paddingTop: "8px" }}>
+            <Text size="xs" c="dimmed" fw={500}>Additional Remarks</Text>
+            <Text size="sm" style={{ whiteSpace: "pre-wrap", marginTop: "2px" }}>{q.additionalRemarks}</Text>
+          </div>
+        )}
+      </Card>
+
+      {customFieldsQuery.data && (
+        (() => {
+          const displayedFields = customFieldsQuery.data
+            .map((f) => {
+              const val = q.customFields?.[f.name];
+              let displayVal = "";
+              if (val !== undefined && val !== null && val !== "") {
+                if (f.type === "BOOLEAN") {
+                  displayVal = val ? "Yes" : "No";
+                } else {
+                  displayVal = String(val);
+                }
+              }
+              return {
+                label: f.label,
+                value: displayVal,
+              };
+            })
+            .filter((f) => f.value);
+
+          if (displayedFields.length === 0) return null;
+
+          return (
+            <Card mb="md">
+              <Text fw={600} mb="sm">
+                Additional Information
               </Text>
-            ))}
-          </Group>
-        </Card>
+              <Group gap="xl">
+                {displayedFields.map((f, i) => (
+                  <div key={i}>
+                    <Text size="xs" c="dimmed" fw={500}>
+                      {f.label}
+                    </Text>
+                    <Text size="sm" fw={600} mt={2}>
+                      {f.value}
+                    </Text>
+                  </div>
+                ))}
+              </Group>
+            </Card>
+          );
+        })()
       )}
+
 
       <Card mb="md">
         <Text fw={600} mb="xs">
@@ -228,35 +325,66 @@ export function QuotationDetail() {
         <Table verticalSpacing="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Label</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th ta="right">Amount</Table.Th>
+              <Table.Th>Particulars</Table.Th>
+              <Table.Th ta="right">Per 20'</Table.Th>
+              <Table.Th ta="right">Per 40'</Table.Th>
+              <Table.Th>Remark</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {q.lineItems.map((li, i) => (
-              <Table.Tr key={i}>
-                <Table.Td>
-                  {li.label} {li.isTax && <Badge size="xs" ml={4}>Tax</Badge>}
-                </Table.Td>
-                <Table.Td>{li.componentType}</Table.Td>
-                <Table.Td ta="right">{li.computedAmount.toFixed(2)}</Table.Td>
-              </Table.Tr>
-            ))}
+            {q.lineItems.map((li, i) => {
+              const breakdown = li.containerBreakdown as any[] | null;
+              let rate20 = "-";
+              let rate40 = "-";
+
+              if (li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown)) {
+                const entry20 = breakdown.find((b: any) => b.label.includes("20"));
+                const entry40 = breakdown.find((b: any) => b.label.includes("40"));
+                if (entry20 && entry20.rate !== undefined && entry20.rate !== null) {
+                  rate20 = `Rs. ${Number(entry20.rate).toFixed(2)}`;
+                }
+                if (entry40 && entry40.rate !== undefined && entry40.rate !== null) {
+                  rate40 = `Rs. ${Number(entry40.rate).toFixed(2)}`;
+                }
+              } else if (li.componentType === "PER_CONTAINER_TEXT" && breakdown && Array.isArray(breakdown)) {
+                rate20 = breakdown.find((b: any) => b.label.includes("20"))?.textValue || "-";
+                rate40 = breakdown.find((b: any) => b.label.includes("40"))?.textValue || "-";
+              } else if (li.componentType === "FIXED") {
+                const val = `Rs. ${Number(li.fixedValue ?? 0).toFixed(2)}`;
+                rate20 = val;
+                rate40 = val;
+              } else if (li.componentType === "PERCENTAGE") {
+                const val = `${Number(li.percentageValue ?? 0).toFixed(2)}%`;
+                rate20 = val;
+                rate40 = val;
+              } else if (li.componentType === "TEXT") {
+                const val = li.textValue || "-";
+                rate20 = val;
+                rate40 = val;
+              }
+
+              return (
+                <Table.Tr key={i}>
+                  <Table.Td>
+                    <div>
+                      {li.label} {li.isTax && <Badge size="xs" ml={4}>Tax</Badge>}
+                    </div>
+                  </Table.Td>
+                  <Table.Td ta="right">{rate20}</Table.Td>
+                  <Table.Td ta="right">{rate40}</Table.Td>
+                  <Table.Td>{li.remark || "-"}</Table.Td>
+                </Table.Tr>
+              );
+            })}
           </Table.Tbody>
         </Table>
-        <Stack gap={4} mt="md" align="flex-end">
-          <Text size="sm">Subtotal: {q.subtotal.toFixed(2)}</Text>
-          <Text size="sm">Tax: {q.taxTotal.toFixed(2)}</Text>
-          <Text size="sm">Other adjustments: {q.otherAdjustmentsTotal.toFixed(2)}</Text>
-          <Text fw={700}>Grand total: {q.grandTotal.toFixed(2)}</Text>
-        </Stack>
+
       </Card>
 
       {q.notes && (
         <Card mb="md">
           <Text fw={600} mb="xs">
-            Notes
+            Terms and conditions
           </Text>
           <Text size="sm">{q.notes}</Text>
         </Card>
@@ -291,6 +419,21 @@ export function QuotationDetail() {
           />
           <Button color="red" onClick={() => rejectMutation.mutate()} loading={rejectMutation.isPending} disabled={!rejectComment.trim()}>
             Send back to Draft
+          </Button>
+        </Stack>
+      </Modal>
+
+      <Modal opened={clientRejectOpened} onClose={closeClientReject} title="Mark as Rejected by Client">
+        <Stack>
+          <Textarea
+            label="Reason"
+            required
+            value={clientRejectComment}
+            onChange={(e) => setClientRejectComment(e.currentTarget.value)}
+            placeholder="Explain the client's reason for rejecting the quotation"
+          />
+          <Button color="red" onClick={() => clientRejectMutation.mutate()} loading={clientRejectMutation.isPending} disabled={!clientRejectComment.trim()}>
+            Reject Quotation
           </Button>
         </Stack>
       </Modal>

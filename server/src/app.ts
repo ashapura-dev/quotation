@@ -2,6 +2,7 @@ import path from "node:path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import morgan from "morgan";
 import { requireXhrHeader } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./modules/auth/auth.routes.js";
@@ -14,13 +15,21 @@ import quotationRoutes from "./modules/quotations/quotations.routes.js";
 import settingsRoutes from "./modules/settings/settings.routes.js";
 import notificationRoutes from "./modules/notifications/notifications.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
-import invoiceRoutes from "./modules/invoices/invoices.routes.js";
+import customFieldRoutes from "./modules/customFields/customFields.routes.js";
 import { env } from "./config/env.js";
+import { logger } from "./utils/logger.js";
 
 export function createApp() {
   const app = express();
 
   app.use(cors({ origin: true, credentials: true }));
+  app.use(
+    morgan(env.nodeEnv === "production" ? "combined" : "dev", {
+      stream: {
+        write: (message) => logger.info(message.trim()),
+      },
+    })
+  );
   app.use(express.json());
   app.use(cookieParser());
   app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
@@ -37,7 +46,8 @@ export function createApp() {
   app.use("/api/settings", settingsRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/dashboard", dashboardRoutes);
-  app.use("/api/invoices", invoiceRoutes);
+  app.use("/api/custom-fields", customFieldRoutes);
+
 
   app.use("/api", notFoundHandler);
 

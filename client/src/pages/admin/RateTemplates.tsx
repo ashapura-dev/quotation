@@ -15,12 +15,13 @@ import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { computeQuotationTotals } from "@ashapura/calc-engine";
-import { useMemo, useState } from "react";
+import { computeQuotationTotals } from "../../lib/calcEngine";
+import { useEffect, useMemo, useState } from "react";
 import { fetchContainerSizes } from "../../api/containerSizes";
 import {
   createNewRateTemplateVersion,
   createRateTemplate,
+  deactivateRateTemplate,
   fetchRateTemplates,
   saveRateTemplateComponents,
   updateRateTemplateMeta,
@@ -40,9 +41,24 @@ export function RateTemplates() {
 
   const selected = templatesQuery.data?.find((t) => t.id === selectedId) ?? null;
 
+  const [localLocation, setLocalLocation] = useState("");
+
+  useEffect(() => {
+    setLocalLocation(selected?.location ?? "");
+  }, [selected?.id, selected?.location]);
+
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["rate-templates"] });
 
-  const createForm = useForm({ initialValues: { name: "", quotationType: "DPD" as "DPD" | "NON_DPD" } });
+  useEffect(() => {
+    if (templatesQuery.data && selectedId === null) {
+      const defaultTemplate = templatesQuery.data.find((t) => t.isDefault) ?? templatesQuery.data[0];
+      if (defaultTemplate) {
+        selectTemplate(defaultTemplate);
+      }
+    }
+  }, [templatesQuery.data, selectedId]);
+
+  const createForm = useForm({ initialValues: { name: "", quotationType: "DPD" as "DPD" | "NON_DPD", location: "" } });
 
   const createMutation = useMutation({
     mutationFn: createRateTemplate,
@@ -53,6 +69,14 @@ export function RateTemplates() {
       close();
     },
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not create template", message: err.message }),
+  });
+
+  const updateMetaMutation = useMutation({
+    mutationFn: (meta: { name?: string; location?: string | null }) => updateRateTemplateMeta(selected!.id, meta),
+    onSuccess: () => {
+      invalidate();
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Update failed", message: err.message }),
   });
 
   const saveComponentsMutation = useMutation({
@@ -82,6 +106,16 @@ export function RateTemplates() {
     onError: (err: Error) => notifications.show({ color: "red", title: "Could not create version", message: err.message }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deactivateRateTemplate(selected!.id),
+    onSuccess: () => {
+      notifications.show({ color: "green", message: "Rate template deleted" });
+      invalidate();
+      setSelectedId(null);
+    },
+    onError: (err: Error) => notifications.show({ color: "red", title: "Delete failed", message: err.message }),
+  });
+
   function selectTemplate(template: RateTemplate) {
     setSelectedId(template.id);
     setDraftComponents(template.components);
@@ -104,6 +138,8 @@ export function RateTemplates() {
         fixedValue: c.fixedValue ?? undefined,
         percentageValue: c.percentageValue ?? undefined,
         containerRates: c.containerRates.map((r) => ({ containerSizeId: String(r.containerSizeId), rateValue: r.rateValue })),
+        textValue: c.textValue ?? undefined,
+        remark: c.remark ?? undefined,
       })),
       sampleContainers,
     );
@@ -148,11 +184,39 @@ export function RateTemplates() {
               <Group justify="space-between" mb="md">
                 <div>
                   <Title order={3}>{selected.name}</Title>
-                  <Text size="sm" c="dimmed">
-                    {selected.quotationType} · version {selected.version}
-                  </Text>
+                  <Group gap="xs" mt={4} align="center">
+                    <Text size="sm" c="dimmed">
+                      {selected.quotationType} · version {selected.version}
+                    </Text>
+                    <Text size="sm" c="dimmed">·</Text>
+                    <TextInput
+                      placeholder="Add location (e.g. Nhava Sheva)"
+                      variant="unstyled"
+                      size="sm"
+                      value={localLocation}
+                      styles={{ input: { height: 20, minHeight: 20, color: "var(--mantine-color-dimmed)", fontWeight: 500, textDecoration: "underline", textDecorationStyle: "dashed" } }}
+                      onChange={(e) => setLocalLocation(e.currentTarget.value)}
+                      onBlur={() => {
+                        updateMetaMutation.mutate({ location: localLocation || null });
+                      }}
+                      w={220}
+                    />
+                  </Group>
                 </div>
                 <Group>
+                  <Button
+                    color="red"
+                    variant="light"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this rate template?")) {
+                        deleteMutation.mutate();
+                      }
+                    }}
+                    loading={deleteMutation.isPending}
+                    disabled={selected.isDefault}
+                  >
+                    Delete template
+                  </Button>
                   <Button variant="light" onClick={() => setDefaultMutation.mutate()} disabled={selected.isDefault}>
                     Set as default
                   </Button>
@@ -196,6 +260,7 @@ export function RateTemplates() {
         <form onSubmit={createForm.onSubmit((values) => createMutation.mutate(values))}>
           <Stack>
             <TextInput label="Name" required {...createForm.getInputProps("name")} />
+            <TextInput label="Location" placeholder="e.g. Nhava Sheva" {...createForm.getInputProps("location")} />
             <Select
               label="Quotation type"
               data={[

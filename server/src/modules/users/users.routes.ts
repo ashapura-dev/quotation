@@ -5,7 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { createUser, listUsers, setUserActive, updateUser } from "./users.service.js";
 
 const router = Router();
-router.use(authenticate, requireRole("ADMIN"));
+router.use(authenticate, requireRole("SUPER_ADMIN"));
 
 router.get(
   "/",
@@ -18,7 +18,7 @@ const createSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.enum(["ADMIN", "STAFF", "APPROVER"]),
+  role: z.enum(["SUPER_ADMIN", "EMPLOYEE", "TL"]),
 });
 
 router.post(
@@ -31,7 +31,8 @@ router.post(
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
-  role: z.enum(["ADMIN", "STAFF", "APPROVER"]).optional(),
+  role: z.enum(["SUPER_ADMIN", "EMPLOYEE", "TL"]).optional(),
+  password: z.string().min(8).optional(),
 });
 
 router.put(

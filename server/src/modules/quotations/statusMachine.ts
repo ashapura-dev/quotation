@@ -1,9 +1,9 @@
-import type { Prisma, QuotationStatus, Role } from "@prisma/client";
+import type { QuotationStatus, Role } from "@prisma/client";
 import { prisma } from "../../config/db.js";
 import { HttpError } from "../../middleware/errorHandler.js";
 import { notifyRoles, notifyUser } from "../notifications/notifications.service.js";
 
-export type StatusAction = "submit" | "approve" | "reject" | "markSent";
+export type StatusAction = "submit" | "approve" | "reject" | "markSent" | "clientApprove" | "clientReject";
 
 interface TransitionRule {
   from: QuotationStatus;
@@ -14,19 +14,13 @@ interface TransitionRule {
 }
 
 const TRANSITIONS: Record<StatusAction, TransitionRule> = {
-  submit: { from: "DRAFT", to: "PENDING", allowedRoles: ["STAFF", "ADMIN"], requiresOwnership: true, requiresComment: false },
-  approve: { from: "PENDING", to: "APPROVED", allowedRoles: ["APPROVER", "ADMIN"], requiresOwnership: false, requiresComment: false },
-  reject: { from: "PENDING", to: "DRAFT", allowedRoles: ["APPROVER", "ADMIN"], requiresOwnership: false, requiresComment: true },
-  markSent: { from: "APPROVED", to: "SENT", allowedRoles: ["STAFF", "ADMIN"], requiresOwnership: true, requiresComment: false },
+  submit: { from: "DRAFT", to: "PENDING", allowedRoles: ["EMPLOYEE", "TL", "SUPER_ADMIN"], requiresOwnership: true, requiresComment: false },
+  approve: { from: "PENDING", to: "APPROVED", allowedRoles: ["TL", "SUPER_ADMIN"], requiresOwnership: false, requiresComment: false },
+  reject: { from: "PENDING", to: "DRAFT", allowedRoles: ["TL", "SUPER_ADMIN"], requiresOwnership: false, requiresComment: true },
+  markSent: { from: "APPROVED", to: "SENT_TO_CLIENT", allowedRoles: ["EMPLOYEE", "SUPER_ADMIN"], requiresOwnership: true, requiresComment: false },
+  clientApprove: { from: "SENT_TO_CLIENT", to: "APPROVED_BY_CLIENT", allowedRoles: ["EMPLOYEE", "TL", "SUPER_ADMIN"], requiresOwnership: false, requiresComment: false },
+  clientReject: { from: "SENT_TO_CLIENT", to: "REJECTED_BY_CLIENT", allowedRoles: ["EMPLOYEE", "TL", "SUPER_ADMIN"], requiresOwnership: false, requiresComment: true },
 };
-
-async function snapshotQuotation(tx: Prisma.TransactionClient, quotationId: number) {
-  const full = await tx.quotation.findUniqueOrThrow({
-    where: { id: quotationId },
-    include: { containers: true, lineItems: true },
-  });
-  return JSON.parse(JSON.stringify(full));
-}
 
 export async function applyStatusTransition(
   quotationId: number,
@@ -45,16 +39,25 @@ export async function applyStatusTransition(
   if (!rule.allowedRoles.includes(user.role)) {
     throw new HttpError(403, "You do not have permission to perform this action");
   }
-  if (rule.requiresOwnership && user.role !== "ADMIN" && quotation.createdById !== user.id) {
+  if (rule.requiresOwnership && user.role !== "SUPER_ADMIN" && quotation.createdById !== user.id) {
     throw new HttpError(403, "You can only do this on your own quotations");
   }
   if (quotation.status !== rule.from) {
     throw new HttpError(400, `Cannot ${action} a quotation that is currently ${quotation.status}`);
   }
 
+  const autoApprove = action === "submit" && (user.role === "TL" || user.role === "SUPER_ADMIN");
+  const targetStatus = autoApprove ? "APPROVED" : rule.to;
+
   await prisma.$transaction(async (tx) => {
-    const statusFields: Record<string, unknown> = { status: rule.to };
-    if (action === "submit") statusFields.submittedAt = new Date();
+    const statusFields: Record<string, unknown> = { status: targetStatus };
+    if (action === "submit") {
+      statusFields.submittedAt = new Date();
+      if (autoApprove) {
+        statusFields.approvedById = user.id;
+        statusFields.approvedAt = new Date();
+      }
+    }
     if (action === "approve") {
       statusFields.approvedById = user.id;
       statusFields.approvedAt = new Date();
@@ -72,30 +75,30 @@ export async function applyStatusTransition(
       data: {
         quotationId,
         fromStatus: rule.from,
-        toStatus: rule.to,
+        toStatus: targetStatus,
         changedById: user.id,
         comment: comment?.trim() || null,
       },
     });
 
-    await tx.quotationRevision.create({
-      data: {
-        quotationId,
-        snapshot: await snapshotQuotation(tx, quotationId),
-        statusAtSnapshot: rule.to,
-        reason: `status:${action}`,
-        createdById: user.id,
-      },
-    });
-
     if (action === "submit") {
-      await notifyRoles(
-        tx,
-        ["APPROVER", "ADMIN"],
-        "SUBMITTED_FOR_REVIEW",
-        `Quotation ${quotation.quotationNumber} was submitted for your review.`,
-        quotationId,
-      );
+      if (autoApprove) {
+        await notifyUser(
+          tx,
+          quotation.createdById,
+          "APPROVED",
+          `Quotation ${quotation.quotationNumber} was automatically approved.`,
+          quotationId,
+        );
+      } else {
+        await notifyRoles(
+          tx,
+          ["TL", "SUPER_ADMIN"],
+          "SUBMITTED_FOR_REVIEW",
+          `Quotation ${quotation.quotationNumber} was submitted for your review.`,
+          quotationId,
+        );
+      }
     } else if (action === "approve") {
       await notifyUser(
         tx,
@@ -115,9 +118,39 @@ export async function applyStatusTransition(
     } else if (action === "markSent") {
       await notifyRoles(
         tx,
-        ["ADMIN"],
-        "SENT",
-        `Quotation ${quotation.quotationNumber} was marked as Sent.`,
+        ["SUPER_ADMIN"],
+        "SENT_TO_CLIENT",
+        `Quotation ${quotation.quotationNumber} was marked as Sent to Client.`,
+        quotationId,
+      );
+    } else if (action === "clientApprove") {
+      await notifyUser(
+        tx,
+        quotation.createdById,
+        "APPROVED_BY_CLIENT",
+        `Quotation ${quotation.quotationNumber} was approved by client.`,
+        quotationId,
+      );
+      await notifyRoles(
+        tx,
+        ["SUPER_ADMIN"],
+        "APPROVED_BY_CLIENT",
+        `Quotation ${quotation.quotationNumber} was approved by client.`,
+        quotationId,
+      );
+    } else if (action === "clientReject") {
+      await notifyUser(
+        tx,
+        quotation.createdById,
+        "REJECTED_BY_CLIENT",
+        `Quotation ${quotation.quotationNumber} was rejected by client: ${comment?.trim()}`,
+        quotationId,
+      );
+      await notifyRoles(
+        tx,
+        ["SUPER_ADMIN"],
+        "REJECTED_BY_CLIENT",
+        `Quotation ${quotation.quotationNumber} was rejected by client: ${comment?.trim()}`,
         quotationId,
       );
     }

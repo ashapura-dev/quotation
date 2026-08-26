@@ -17,8 +17,8 @@ export const theme = createTheme({
   primaryColor: "brand",
   colors: { brand },
   defaultRadius: "md",
-  fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  headings: { fontWeight: "600" },
+  fontFamily: "Outfit, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  headings: { fontFamily: "Outfit, Inter, sans-serif", fontWeight: "650" },
   shadows: {
     sm: "0 1px 3px rgba(0, 0, 0, 0.08)",
     md: "0 4px 12px rgba(0, 0, 0, 0.08)",
@@ -29,6 +29,30 @@ export const theme = createTheme({
     },
     Paper: {
       defaultProps: { radius: "lg" },
+    },
+    Button: {
+      defaultProps: { radius: "md" },
+    },
+    ActionIcon: {
+      defaultProps: { radius: "md" },
+    },
+    Modal: {
+      defaultProps: { radius: "lg", centered: true, overlayProps: { backgroundOpacity: 0.28, blur: 2 } },
+    },
+    TextInput: {
+      defaultProps: { radius: "md" },
+    },
+    NumberInput: {
+      defaultProps: { radius: "md" },
+    },
+    Select: {
+      defaultProps: { radius: "md" },
+    },
+    PasswordInput: {
+      defaultProps: { radius: "md" },
+    },
+    Textarea: {
+      defaultProps: { radius: "md" },
     },
   },
 });

@@ -17,19 +17,20 @@ import { prisma } from "../../config/db.js";
 import { generateQuotationPdf } from "./pdf.service.js";
 import { sendMail } from "../settings/smtp.service.js";
 import { HttpError } from "../../middleware/errorHandler.js";
-import { convertQuotationToInvoice } from "../invoices/invoices.service.js";
 
 const router = Router();
 router.use(authenticate);
 
 const componentSchema = z.object({
   label: z.string().min(1),
-  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER"]),
+  componentType: z.enum(["FIXED", "PERCENTAGE", "PER_CONTAINER", "PER_CONTAINER_TEXT", "TEXT"]),
   isTax: z.boolean(),
   fixedValue: z.number().nullable().optional(),
   percentageValue: z.number().nullable().optional(),
-  containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number() })).optional(),
+  containerRates: z.array(z.object({ containerSizeId: z.number(), rateValue: z.number(), textValue: z.string().nullable().optional() })).optional(),
   sourceTemplateComponentId: z.number().nullable().optional(),
+  textValue: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
 });
 
 const containerSchema = z.object({
@@ -49,12 +50,29 @@ const quotationSchema = z.object({
   clientEmail: z.string().email().optional().or(z.literal("")),
   rateTemplateId: z.number().nullable().optional(),
   pdfTemplateId: z.number().nullable().optional(),
+  location: z.string().optional().nullable(),
+  route: z.string().optional().nullable(),
+  title: z.string().optional().nullable(),
+  customFields: z.record(z.any()).optional().nullable(),
+  servicesOffered: z.string().optional().nullable(),
+  commodityType: z.string().optional().nullable(),
+  containerDetails: z.string().optional().nullable(),
+  additionalRemarks: z.string().optional().nullable(),
   notes: z.string().optional(),
   containers: z.array(containerSchema),
   components: z.array(componentSchema),
 });
 
 function filtersFromQuery(query: Record<string, unknown>) {
+  const standardKeys = ["search", "status", "quotationType", "containerSizeId", "dateFrom", "dateTo", "page", "pageSize", "fields"];
+  const customFieldFilters: Record<string, any> = {};
+
+  Object.entries(query).forEach(([key, val]) => {
+    if (!standardKeys.includes(key) && val !== undefined && val !== null && val !== "") {
+      customFieldFilters[key] = val;
+    }
+  });
+
   return {
     search: typeof query.search === "string" && query.search ? query.search : undefined,
     status: typeof query.status === "string" && query.status ? query.status : undefined,
@@ -64,44 +82,91 @@ function filtersFromQuery(query: Record<string, unknown>) {
     dateTo: typeof query.dateTo === "string" && query.dateTo ? query.dateTo : undefined,
     page: query.page ? Number(query.page) : undefined,
     pageSize: query.pageSize ? Number(query.pageSize) : undefined,
+    fields: typeof query.fields === "string" ? query.fields : undefined,
+    customFieldFilters,
   };
 }
 
 router.get(
   "/export",
   asyncHandler(async (req, res) => {
-    const quotations = await listQuotationsForExport(filtersFromQuery(req.query));
+    const parsedFilters = filtersFromQuery(req.query);
+    const quotations = await listQuotationsForExport(parsedFilters);
+
+    // Fetch custom field labels to map them dynamically to header titles
+    const customFields = await prisma.customField.findMany();
+    const customFieldsMap = customFields.reduce((acc, f) => {
+      acc[f.name] = f.label;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const AVAILABLE_COLUMNS: Record<string, { header: string; width: number; getValue: (q: any) => any }> = {
+      quotationNumber: { header: "Quotation Number", width: 20, getValue: (q) => q.quotationNumber },
+      clientName: { header: "Client", width: 28, getValue: (q) => q.clientName },
+      quotationType: { header: "Type", width: 10, getValue: (q) => q.quotationType },
+      status: { header: "Status", width: 12, getValue: (q) => q.status },
+      containers: { header: "Containers", width: 24, getValue: (q) => q.containers.map((c: any) => `${c.containerSizeLabel} x${c.quantity}`).join(", ") },
+      createdBy: { header: "Created By", width: 18, getValue: (q) => q.createdBy?.name },
+      approvedBy: { header: "Approved By", width: 18, getValue: (q) => q.approvedBy?.name ?? "-" },
+      createdAt: { header: "Created At", width: 20, getValue: (q) => q.createdAt.toISOString() },
+    };
+
+    let activeKeys = Object.keys(AVAILABLE_COLUMNS);
+    if (typeof parsedFilters.fields === "string" && parsedFilters.fields.trim() !== "") {
+      activeKeys = parsedFilters.fields.split(",").map(k => k.trim());
+    }
 
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Quotations");
-    sheet.columns = [
-      { header: "Quotation Number", key: "quotationNumber", width: 20 },
-      { header: "Client", key: "clientName", width: 28 },
-      { header: "Type", key: "quotationType", width: 10 },
-      { header: "Status", key: "status", width: 12 },
-      { header: "Containers", key: "containers", width: 24 },
-      { header: "Subtotal", key: "subtotal", width: 14 },
-      { header: "Tax", key: "taxTotal", width: 14 },
-      { header: "Other Adjustments", key: "otherAdjustmentsTotal", width: 16 },
-      { header: "Grand Total", key: "grandTotal", width: 14 },
-      { header: "Created By", key: "createdBy", width: 18 },
-      { header: "Created At", key: "createdAt", width: 20 },
+
+    sheet.columns = activeKeys.map(key => {
+      if (AVAILABLE_COLUMNS[key]) {
+        return {
+          header: AVAILABLE_COLUMNS[key].header,
+          key,
+          width: AVAILABLE_COLUMNS[key].width
+        };
+      }
+      const label = customFieldsMap[key] || key;
+      return {
+        header: label,
+        key,
+        width: 20
+      };
+    });
+
+    const DEFAULT_FIELD_NAMES = [
+      "location",
+      "route",
+      "title",
+      "servicesOffered",
+      "commodityType",
+      "containerDetails",
+      "additionalRemarks",
+      "notes",
+      "clientAddress",
+      "clientGstin",
+      "clientContactPerson",
+      "clientPhone",
+      "clientEmail",
     ];
+
     for (const q of quotations) {
-      sheet.addRow({
-        quotationNumber: q.quotationNumber,
-        clientName: q.clientName,
-        quotationType: q.quotationType,
-        status: q.status,
-        containers: q.containers.map((c) => `${c.containerSizeLabel} x${c.quantity}`).join(", "),
-        subtotal: q.subtotal,
-        taxTotal: q.taxTotal,
-        otherAdjustmentsTotal: q.otherAdjustmentsTotal,
-        grandTotal: q.grandTotal,
-        createdBy: q.createdBy?.name,
-        createdAt: q.createdAt.toISOString(),
+      const rowData: Record<string, any> = {};
+      activeKeys.forEach(key => {
+        if (AVAILABLE_COLUMNS[key]) {
+          rowData[key] = AVAILABLE_COLUMNS[key].getValue(q);
+        } else if (DEFAULT_FIELD_NAMES.includes(key)) {
+          const val = (q as any)[key];
+          rowData[key] = val !== undefined && val !== null ? String(val) : "-";
+        } else {
+          const customVal = (q.customFields as Record<string, any>)?.[key];
+          rowData[key] = customVal !== undefined && customVal !== null ? String(customVal) : "-";
+        }
       });
+      sheet.addRow(rowData);
     }
+
     sheet.getRow(1).font = { bold: true };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -152,13 +217,6 @@ router.delete(
 );
 
 router.post(
-  "/:id/convert-to-invoice",
-  asyncHandler(async (req, res) => {
-    res.status(201).json({ invoice: await convertQuotationToInvoice(Number(req.params.id), req.user!.id) });
-  }),
-);
-
-router.post(
   "/:id/duplicate",
   asyncHandler(async (req, res) => {
     res.status(201).json({ quotation: await duplicateQuotation(Number(req.params.id), req.user!.id) });
@@ -200,15 +258,20 @@ router.post(
   }),
 );
 
-router.get(
-  "/:id/revisions",
+router.post(
+  "/:id/client-approve",
   asyncHandler(async (req, res) => {
-    const revisions = await prisma.quotationRevision.findMany({
-      where: { quotationId: Number(req.params.id) },
-      include: { createdBy: { select: { id: true, name: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json({ revisions });
+    await applyStatusTransition(Number(req.params.id), "clientApprove", req.user!);
+    res.json({ quotation: await getQuotation(Number(req.params.id)) });
+  }),
+);
+
+router.post(
+  "/:id/client-reject",
+  asyncHandler(async (req, res) => {
+    const { comment } = commentSchema.parse(req.body);
+    await applyStatusTransition(Number(req.params.id), "clientReject", req.user!, comment);
+    res.json({ quotation: await getQuotation(Number(req.params.id)) });
   }),
 );
 
@@ -217,8 +280,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const templateId = req.query.templateId ? Number(req.query.templateId) : undefined;
     const { pdfBuffer, quotation } = await generateQuotationPdf(Number(req.params.id), templateId);
+    const disposition = req.query.download === "1" ? "attachment" : "inline";
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="${quotation.quotationNumber.replace(/\//g, "-")}.pdf"`);
+    res.setHeader("Content-Disposition", `${disposition}; filename="${quotation.quotationNumber.replace(/\//g, "-")}.pdf"`);
     res.send(pdfBuffer);
   }),
 );

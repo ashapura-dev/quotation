@@ -3,78 +3,379 @@
 <head>
 <meta charset="utf-8" />
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: {{fontFamily}}; color: #222; margin: 0; padding: 0 8mm; font-size: 13px; }
-  .header { border-bottom: 4px solid {{primaryColor}}; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .logo { max-height: 60px; max-width: 200px; margin-bottom: 8px; }
-  .meta { text-align: right; font-size: 12px; color: {{secondaryColor}}; }
-  .meta .number { font-size: 16px; font-weight: bold; color: #222; }
-  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
-  th, td { padding: 7px 8px; border-bottom: 1px solid #e0e0e0; text-align: left; }
-  th { background: #f6f6f6; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; color: {{secondaryColor}}; }
-  .amount { text-align: right; }
-  .totals { margin-top: 14px; width: 280px; margin-left: auto; }
-  .totals-row { display: flex; justify-content: space-between; padding: 4px 0; }
-  .grand { font-weight: bold; font-size: 15px; border-top: 2px solid {{primaryColor}}; padding-top: 8px; margin-top: 6px; }
-  .footer { margin-top: 28px; font-size: 11px; color: {{secondaryColor}}; border-top: 1px solid #e0e0e0; padding-top: 10px; }
-  .terms { margin-top: 16px; font-size: 11px; color: #666; white-space: pre-wrap; }
-  .client-box { margin-top: 4px; padding: 12px; background: #fafafa; border-radius: 6px; }
-  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; background: {{primaryColor}}; color: white; font-size: 11px; margin-top: 4px; }
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', {{fontFamily}};
+    color: #2D3748;
+    background-color: #FFFFFF;
+    margin: 0;
+    padding: 4mm 6mm;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  
+  /* Top Colored Accent Bar */
+  .top-accent {
+    height: 4px;
+    background: linear-gradient(90deg, {{primaryColor}} 0%, {{secondaryColor}} 100%);
+    margin-bottom: 20px;
+    border-radius: 2px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  
+  .brand-section {
+    max-width: 60%;
+  }
+
+  .logo {
+    max-height: 48px;
+    max-width: 180px;
+    margin-bottom: 6px;
+    object-fit: contain;
+  }
+  
+  .company-info {
+    font-size: 11px;
+    color: #718096;
+    line-height: 1.4;
+  }
+
+  .meta-section {
+    text-align: right;
+  }
+
+  .number-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #A0AEC0;
+    font-weight: 700;
+  }
+
+  .number-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: {{primaryColor}};
+    margin-bottom: 4px;
+  }
+  
+  .meta-item {
+    font-size: 11.5px;
+    color: #4A5568;
+    margin-bottom: 2px;
+  }
+  
+  .meta-label {
+    font-weight: 600;
+    color: #718096;
+  }
+
+  /* Centered Title Banner */
+  .title-banner {
+    background: linear-gradient(135deg, rgba(28, 126, 214, 0.06) 0%, rgba(73, 80, 87, 0.03) 100%);
+    border-left: 4px solid {{primaryColor}};
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    border-radius: 0 6px 6px 0;
+  }
+  
+  .title-banner h2 {
+    margin: 0;
+    color: #1A202C;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Client & Info Grid */
+  .grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  
+  .card {
+    flex: 1;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  
+  .card-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #718096;
+    font-weight: 700;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 4px;
+  }
+  
+  .client-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1A202C;
+    margin-bottom: 4px;
+  }
+  
+  .client-detail {
+    font-size: 11px;
+    color: #4A5568;
+    margin-bottom: 2px;
+    line-height: 1.4;
+  }
+
+  /* Table Design */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 22px;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  
+  th {
+    background-color: #F1F5F9;
+    color: #334155;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 8px 12px;
+    border-bottom: 2px solid #E2E8F0;
+    text-align: left;
+  }
+  
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #E2E8F0;
+    color: #334155;
+    font-size: 11px;
+    vertical-align: middle;
+  }
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  tr:nth-child(even) td {
+    background-color: #F8FAFC;
+  }
+  
+  .amount-col {
+    text-align: right;
+    font-weight: 600;
+    width: 120px;
+  }
+  
+  .particulars-col {
+    font-weight: 500;
+  }
+
+  .remark-col {
+    text-align: left;
+    width: 140px;
+    font-size: 10px;
+    color: #4A5568;
+  }
+
+  /* Notes & Terms */
+  .info-sections {
+    margin-top: auto;
+  }
+  
+  .section-box {
+    margin-bottom: 12px;
+    background: #FFF;
+    border: 1px dashed #CBD5E1;
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  
+  .section-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748B;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  
+  .section-content {
+    font-size: 10.5px;
+    color: #475569;
+    white-space: pre-wrap;
+    line-height: 1.45;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #E2E8F0;
+    font-size: 9.5px;
+    color: #94A3B8;
+    text-align: center;
+    line-height: 1.4;
+  }
 </style>
 </head>
 <body>
+  <div class="top-accent"></div>
+
   <div class="header">
-    <div>
-      {{#if logoDataUri}}<img class="logo" src="{{logoDataUri}}" />{{/if}}
-      <div>{{{headerHtml}}}</div>
+    <div class="brand-section">
+      {{#if logoDataUri}}
+        <img class="logo" src="{{logoDataUri}}" />
+      {{/if}}
+      <div class="company-info">
+        {{{headerHtml}}}
+      </div>
     </div>
-    <div class="meta">
-      <div class="number">{{quotationNumber}}</div>
-      <div>{{quotationType}} Quotation</div>
-      <div>{{createdAtFormatted}}</div>
-      <div class="badge">{{status}}</div>
+    <div class="meta-section">
+      <div class="number-label">Quotation No.</div>
+      <div class="number-val">{{quotationNumber}}</div>
+      <div class="meta-item"><span class="meta-label">Date:</span> {{createdAtFormatted}}</div>
+      {{#if showType}}
+        <div class="meta-item"><span class="meta-label">Type:</span> {{quotationType}}</div>
+      {{/if}}
     </div>
   </div>
 
-  <div class="client-box">
-    <strong>{{clientName}}</strong><br/>
-    {{#if clientAddress}}{{clientAddress}}<br/>{{/if}}
-    {{#if clientContactPerson}}Contact: {{clientContactPerson}}&nbsp;&nbsp;{{/if}}
-    {{#if clientPhone}}Phone: {{clientPhone}}&nbsp;&nbsp;{{/if}}
-    {{#if clientEmail}}Email: {{clientEmail}}{{/if}}
-    {{#if clientGstin}}<br/>GSTIN: {{clientGstin}}{{/if}}
+  <div class="title-banner">
+    <h2>{{heading}}</h2>
   </div>
 
-  {{#if containers.length}}
-  <table>
-    <thead><tr><th>Container</th><th class="amount">Quantity</th></tr></thead>
-    <tbody>
-    {{#each containers}}
-      <tr><td>{{this.containerSizeLabel}}</td><td class="amount">{{this.quantity}}</td></tr>
-    {{/each}}
-    </tbody>
-  </table>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Quotation To</div>
+      <div class="client-name">{{clientName}}</div>
+      {{#if clientAddress}}<div class="client-detail">{{clientAddress}}</div>{{/if}}
+      {{#if clientGstin}}<div class="client-detail"><strong>GSTIN:</strong> {{clientGstin}}</div>{{/if}}
+    </div>
+    <div class="card">
+      <div class="card-title">Contact Details</div>
+      {{#if clientContactPerson}}<div class="client-detail"><strong>Attention:</strong> {{clientContactPerson}}</div>{{/if}}
+      {{#if clientPhone}}<div class="client-detail"><strong>Phone:</strong> {{clientPhone}}</div>{{/if}}
+      {{#if clientEmail}}<div class="client-detail"><strong>Email:</strong> {{clientEmail}}</div>{{/if}}
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top: -12px; margin-bottom: 22px;">
+    <div class="card" style="padding: 10px 14px;">
+      <div class="card-title" style="margin-bottom: 8px;">Shipment Details</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px 24px; font-size: 11px;">
+        <div style="min-width: 140px; flex: 1;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Container Details</strong>
+          <div style="margin-top: 3px; color: #334155; font-weight: 600; line-height: 1.4;">
+            {{#each containers}}
+              <div>{{this.quantity}} &times; {{this.containerSizeLabel}}</div>
+            {{/each}}
+          </div>
+        </div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Location</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if location}}{{location}}{{else}}-{{/if}}</span>
+        </div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Route</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if route}}{{route}}{{else}}-{{/if}}</span>
+        </div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Services Offered</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if servicesOffered}}{{servicesOffered}}{{else}}-{{/if}}</span>
+        </div>
+        <div style="min-width: 140px;">
+          <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">Commodity Type</strong>
+          <span style="color: #334155; font-weight: 600; display: block; margin-top: 3px;">{{#if commodityType}}{{commodityType}}{{else}}-{{/if}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{#if customFields}}
+    <div class="grid" style="margin-top: -12px; margin-bottom: 22px;">
+      <div class="card" style="padding: 10px 14px;">
+        <div class="card-title" style="margin-bottom: 8px;">Additional Details</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; font-size: 11px;">
+          {{#each customFields}}
+            <div style="min-width: 140px; margin-bottom: 8px;">
+              <strong style="color: #718096; font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;">{{this.label}}</strong>
+              <span style="color: #334155; font-weight: 600;">{{this.value}}</span>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
   {{/if}}
 
   <table>
-    <thead><tr><th>Description</th><th class="amount">Amount</th></tr></thead>
+    <thead>
+      <tr>
+        <th class="particulars-col">Particulars</th>
+        <th class="amount-col">Per 20'</th>
+        <th class="amount-col">Per 40'</th>
+        <th class="remark-col">Remark</th>
+      </tr>
+    </thead>
     <tbody>
     {{#each lineItems}}
-      <tr><td>{{this.label}}{{#if this.isTax}} (Tax){{/if}}</td><td class="amount">{{money this.computedAmount}}</td></tr>
+      <tr>
+        <td class="particulars-col">
+          {{this.label}}{{#if this.isTax}} (Tax){{/if}}
+        </td>
+        <td class="amount-col">{{this.rate20}}</td>
+        <td class="amount-col">{{this.rate40}}</td>
+        <td class="remark-col">{{this.remark}}</td>
+      </tr>
     {{/each}}
     </tbody>
   </table>
 
-  <div class="totals">
-    <div class="totals-row"><span>Subtotal</span><span>{{money subtotal}}</span></div>
-    <div class="totals-row"><span>Tax</span><span>{{money taxTotal}}</span></div>
-    <div class="totals-row"><span>Other Adjustments</span><span>{{money otherAdjustmentsTotal}}</span></div>
-    <div class="totals-row grand"><span>Grand Total</span><span>{{money grandTotal}}</span></div>
+  <div class="info-sections">
+    {{#if additionalRemarks}}
+      <div class="section-box">
+        <div class="section-title">Additional Remarks</div>
+        <div class="section-content">{{additionalRemarks}}</div>
+      </div>
+    {{/if}}
+
+    {{#if notes}}
+      <div class="section-box">
+        <div class="section-title">Terms &amp; Conditions</div>
+        <div class="section-content">{{notes}}</div>
+      </div>
+    {{/if}}
+
+    {{#if termsAndConditions}}
+      <div class="section-box">
+        <div class="section-title">Terms &amp; Conditions</div>
+        <div class="section-content">{{termsAndConditions}}</div>
+      </div>
+    {{/if}}
   </div>
 
-  {{#if notes}}<div class="terms"><strong>Notes:</strong> {{notes}}</div>{{/if}}
-  {{#if termsAndConditions}}<div class="terms"><strong>Terms &amp; Conditions:</strong><br/>{{termsAndConditions}}</div>{{/if}}
+  {{#if preparedBy}}
+    <div style="margin-top: 15px; font-size: 11px; color: #4A5568; font-weight: 600; text-align: left; padding-left: 6px;">
+      Prepared by: {{preparedBy}}
+    </div>
+  {{/if}}
 
-  <div class="footer">{{{footerHtml}}}</div>
+  <div class="footer">
+    {{{footerHtml}}}
+  </div>
 </body>
 </html>

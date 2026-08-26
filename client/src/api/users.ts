@@ -20,7 +20,7 @@ export async function createUser(input: { name: string; email: string; password:
   return data.user;
 }
 
-export async function updateUser(id: number, input: { name?: string; role?: Role }): Promise<User> {
+export async function updateUser(id: number, input: { name?: string; role?: Role; password?: string }): Promise<User> {
   const { data } = await apiClient.put<{ user: User }>(`/api/users/${id}`, input);
   return data.user;
 }

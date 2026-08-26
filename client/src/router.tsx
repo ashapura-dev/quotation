@@ -13,11 +13,10 @@ const Clients = lazy(() => import("./pages/admin/Clients").then((m) => ({ defaul
 const RateTemplates = lazy(() => import("./pages/admin/RateTemplates").then((m) => ({ default: m.RateTemplates })));
 const PdfTemplates = lazy(() => import("./pages/admin/PdfTemplates").then((m) => ({ default: m.PdfTemplates })));
 const Settings = lazy(() => import("./pages/admin/Settings").then((m) => ({ default: m.Settings })));
+const CustomFields = lazy(() => import("./pages/admin/CustomFields").then((m) => ({ default: m.CustomFields })));
 const QuotationList = lazy(() => import("./pages/quotations/QuotationList").then((m) => ({ default: m.QuotationList })));
 const QuotationForm = lazy(() => import("./pages/quotations/QuotationForm").then((m) => ({ default: m.QuotationForm })));
 const QuotationDetail = lazy(() => import("./pages/quotations/QuotationDetail").then((m) => ({ default: m.QuotationDetail })));
-const InvoiceList = lazy(() => import("./pages/invoices/InvoiceList").then((m) => ({ default: m.InvoiceList })));
-const InvoiceDetail = lazy(() => import("./pages/invoices/InvoiceDetail").then((m) => ({ default: m.InvoiceDetail })));
 
 function withSuspense(element: ReactNode) {
   return (
@@ -47,13 +46,11 @@ export const router = createBrowserRouter([
           { path: "/quotations/new", element: withSuspense(<QuotationForm />) },
           { path: "/quotations/:id", element: withSuspense(<QuotationDetail />) },
           { path: "/quotations/:id/edit", element: withSuspense(<QuotationForm />) },
-          { path: "/invoices", element: withSuspense(<InvoiceList />) },
-          { path: "/invoices/:id", element: withSuspense(<InvoiceDetail />) },
           { path: "/profile", element: <Placeholder title="Profile" /> },
         ],
       },
       {
-        element: <ProtectedRoute allowedRoles={["ADMIN"]} />,
+        element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />,
         children: [
           {
             element: <AppLayout />,
@@ -63,6 +60,7 @@ export const router = createBrowserRouter([
               { path: "/admin/rate-templates", element: withSuspense(<RateTemplates />) },
               { path: "/admin/pdf-templates", element: withSuspense(<PdfTemplates />) },
               { path: "/admin/clients", element: withSuspense(<Clients />) },
+              { path: "/admin/custom-fields", element: withSuspense(<CustomFields />) },
               { path: "/admin/settings", element: withSuspense(<Settings />) },
             ],
           },

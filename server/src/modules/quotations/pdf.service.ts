@@ -27,10 +27,41 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
   const quotation = await getQuotation(quotationId);
   const template = await resolvePdfTemplate(quotation.pdfTemplateId, quotation.quotationType, requestedTemplateId);
 
+  const allFields = await prisma.customField.findMany({ where: { showInPdf: true } });
+  const customFieldsData = allFields
+    .map((f) => {
+      const val = (quotation.customFields as any)?.[f.name];
+      let valueStr = "-";
+      if (val !== undefined && val !== null) {
+        if (f.type === "BOOLEAN") {
+          valueStr = val ? "Yes" : "No";
+        } else {
+          valueStr = String(val);
+        }
+      }
+      return {
+        label: f.label,
+        value: valueStr,
+        hasValue: val !== undefined && val !== null && val !== "",
+      };
+    })
+    .filter((f) => f.hasValue);
+
   const pdfBuffer = await renderQuotationPdf(
     {
       quotationNumber: quotation.quotationNumber,
       quotationType: quotation.quotationType,
+      showType: quotation.quotationType !== "NON_DPD",
+      heading: (quotation.title || (quotation.quotationType === "NON_DPD" ? "IMPORT CLEARANCE FOR NON-DPD CARGO" : "IMPORT CLEARANCE FOR DPD CARGO") + (quotation.location ? ` - ${quotation.location.toUpperCase()}` : "")).toUpperCase(),
+      route: quotation.route,
+      location: quotation.location,
+      title: quotation.title,
+      customFields: customFieldsData,
+      servicesOffered: quotation.servicesOffered,
+      commodityType: quotation.commodityType,
+      containerDetails: quotation.containerDetails,
+      additionalRemarks: quotation.additionalRemarks,
+      preparedBy: quotation.createdBy?.name,
       status: quotation.status,
       createdAt: quotation.createdAt,
       clientName: quotation.clientName,
@@ -40,7 +71,48 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       clientEmail: quotation.clientEmail,
       clientGstin: quotation.clientGstin,
       containers: quotation.containers,
-      lineItems: quotation.lineItems,
+      lineItems: quotation.lineItems.map((li: any) => {
+        const breakdown = (typeof li.containerBreakdown === "string"
+          ? JSON.parse(li.containerBreakdown)
+          : li.containerBreakdown) as any[] | null;
+
+        let rate20 = "-";
+        let rate40 = "-";
+
+        if (li.componentType === "PER_CONTAINER" && breakdown && Array.isArray(breakdown)) {
+          const entry20 = breakdown.find((b: any) => b.label.includes("20"));
+          const entry40 = breakdown.find((b: any) => b.label.includes("40"));
+          if (entry20 && entry20.rate !== undefined && entry20.rate !== null) {
+            rate20 = `Rs. ${Number(entry20.rate).toFixed(2)}`;
+          }
+          if (entry40 && entry40.rate !== undefined && entry40.rate !== null) {
+            rate40 = `Rs. ${Number(entry40.rate).toFixed(2)}`;
+          }
+        } else if (li.componentType === "PER_CONTAINER_TEXT" && breakdown && Array.isArray(breakdown)) {
+          rate20 = breakdown.find((b: any) => b.label.includes("20"))?.textValue || "-";
+          rate40 = breakdown.find((b: any) => b.label.includes("40"))?.textValue || "-";
+        } else if (li.componentType === "FIXED") {
+          const val = `Rs. ${Number(li.fixedValue ?? 0).toFixed(2)}`;
+          rate20 = val;
+          rate40 = val;
+        } else if (li.componentType === "PERCENTAGE") {
+          const val = `${Number(li.percentageValue ?? 0).toFixed(2)}%`;
+          rate20 = val;
+          rate40 = val;
+        } else if (li.componentType === "TEXT") {
+          const val = li.textValue || "-";
+          rate20 = val;
+          rate40 = val;
+        }
+
+        return {
+          label: li.label,
+          isTax: li.isTax,
+          rate20,
+          rate40,
+          remark: li.remark ?? "",
+        };
+      }),
       subtotal: quotation.subtotal,
       taxTotal: quotation.taxTotal,
       otherAdjustmentsTotal: quotation.otherAdjustmentsTotal,
@@ -55,6 +127,7 @@ export async function generateQuotationPdf(quotationId: number, requestedTemplat
       headerHtml: template.headerHtml,
       footerHtml: template.footerHtml,
       termsAndConditions: template.termsAndConditions,
+      htmlTemplate: template.htmlTemplate,
     },
   );
 

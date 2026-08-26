@@ -1,8 +1,9 @@
-export type ComponentType = "FIXED" | "PERCENTAGE" | "PER_CONTAINER";
+export type ComponentType = "FIXED" | "PERCENTAGE" | "PER_CONTAINER" | "PER_CONTAINER_TEXT" | "TEXT";
 
 export interface ContainerRateInput {
   containerSizeId: string;
   rateValue: number;
+  textValue?: string;
 }
 
 export interface ComponentInput {
@@ -19,6 +20,8 @@ export interface ComponentInput {
   percentageValue?: number;
   /** Required when componentType === "PER_CONTAINER". One rate per container size this component applies to. */
   containerRates?: ContainerRateInput[];
+  /** Required when componentType === "TEXT". */
+  textValue?: string;
 }
 
 export interface SelectedContainerInput {
@@ -33,6 +36,7 @@ export interface ContainerBreakdownEntry {
   quantity: number;
   rate: number;
   lineTotal: number;
+  textValue?: string;
 }
 
 export interface ComputedLineItem {
@@ -43,6 +47,7 @@ export interface ComputedLineItem {
   sortOrder: number;
   computedAmount: number;
   containerBreakdown?: ContainerBreakdownEntry[];
+  textValue?: string;
 }
 
 export interface QuotationTotals {

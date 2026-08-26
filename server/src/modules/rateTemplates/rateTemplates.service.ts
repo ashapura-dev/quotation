@@ -31,7 +31,7 @@ export async function listRateTemplates(quotationType?: QuotationType, includeIn
   const templates = await prisma.rateTemplate.findMany({
     where: { quotationType, ...(includeInactive ? {} : { isActive: true }) },
     include: templateInclude,
-    orderBy: [{ name: "asc" }, { version: "desc" }],
+    orderBy: [{ isDefault: "desc" }, { name: "asc" }, { version: "desc" }],
   });
   return templates.map(serializeTemplate);
 }
@@ -44,12 +44,12 @@ export async function getRateTemplateSerialized(id: number) {
   return serializeTemplate(await getRateTemplate(id));
 }
 
-export async function createRateTemplate(input: { name: string; quotationType: QuotationType; createdById: number }) {
+export async function createRateTemplate(input: { name: string; quotationType: QuotationType; createdById: number; location?: string | null }) {
   const template = await prisma.rateTemplate.create({ data: { ...input }, include: templateInclude });
   return serializeTemplate(template);
 }
 
-export async function updateRateTemplate(id: number, input: { name?: string; isDefault?: boolean }) {
+export async function updateRateTemplate(id: number, input: { name?: string; isDefault?: boolean; location?: string | null }) {
   if (input.isDefault) {
     const template = await prisma.rateTemplate.findUniqueOrThrow({ where: { id } });
     await prisma.rateTemplate.updateMany({
@@ -62,67 +62,23 @@ export async function updateRateTemplate(id: number, input: { name?: string; isD
 }
 
 export async function deactivateRateTemplate(id: number) {
-  await prisma.rateTemplate.update({ where: { id }, data: { isActive: false } });
+  const template = await prisma.rateTemplate.findUnique({ where: { id } });
+  if (!template) {
+    throw new HttpError(404, "Rate template not found");
+  }
+  if (template.isDefault) {
+    throw new HttpError(400, "Cannot delete the default rate template");
+  }
+
+  const usedCount = await prisma.quotation.count({ where: { rateTemplateId: id } });
+  if (usedCount > 0) {
+    throw new HttpError(400, "Cannot delete this rate template because it is used by one or more quotations");
+  }
+
+  await prisma.rateTemplate.delete({ where: { id } });
 }
 
 // ---------- Components ----------
-
-export async function addComponent(
-  rateTemplateId: number,
-  input: { label: string; componentType: ComponentType; isTax?: boolean; fixedValue?: number; percentageValue?: number },
-) {
-  const maxSort = await prisma.rateTemplateComponent.aggregate({
-    where: { rateTemplateId },
-    _max: { sortOrder: true },
-  });
-  await prisma.rateTemplateComponent.create({
-    data: { rateTemplateId, sortOrder: (maxSort._max.sortOrder ?? -1) + 1, ...input },
-  });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function updateComponent(
-  rateTemplateId: number,
-  componentId: number,
-  input: { label?: string; isTax?: boolean; fixedValue?: number | null; percentageValue?: number | null },
-) {
-  await prisma.rateTemplateComponent.update({ where: { id: componentId }, data: input });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function deleteComponent(rateTemplateId: number, componentId: number) {
-  // Soft-deleted: quotations may still reference this component id for traceability.
-  await prisma.rateTemplateComponent.update({ where: { id: componentId }, data: { isActive: false } });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function reorderComponents(rateTemplateId: number, orderedIds: number[]) {
-  await prisma.$transaction(
-    orderedIds.map((id, index) => prisma.rateTemplateComponent.update({ where: { id }, data: { sortOrder: index } })),
-  );
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function setContainerRate(
-  rateTemplateId: number,
-  componentId: number,
-  containerSizeId: number,
-  rateValue: number,
-) {
-  await prisma.rateTemplateContainerRate.upsert({
-    where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: componentId, containerSizeId } },
-    update: { rateValue },
-    create: { rateTemplateComponentId: componentId, containerSizeId, rateValue },
-  });
-  return getRateTemplateSerialized(rateTemplateId);
-}
-
-export async function removeContainerRate(rateTemplateId: number, componentId: number, containerSizeId: number) {
-  await prisma.rateTemplateContainerRate.delete({
-    where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: componentId, containerSizeId } },
-  });
-  return getRateTemplateSerialized(rateTemplateId);
-}
 
 export interface ComponentSyncInput {
   id?: number;
@@ -131,7 +87,9 @@ export interface ComponentSyncInput {
   isTax: boolean;
   fixedValue?: number | null;
   percentageValue?: number | null;
-  containerRates?: { containerSizeId: number; rateValue: number }[];
+  containerRates?: { containerSizeId: number; rateValue: number; textValue?: string | null }[];
+  textValue?: string | null;
+  remark?: string | null;
 }
 
 /**
@@ -165,6 +123,8 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
                 fixedValue: component.fixedValue ?? null,
                 percentageValue: component.percentageValue ?? null,
                 sortOrder: index,
+                textValue: component.textValue ?? null,
+                remark: component.remark ?? null,
               },
             })
           ).id
@@ -178,11 +138,13 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
                 fixedValue: component.fixedValue ?? null,
                 percentageValue: component.percentageValue ?? null,
                 sortOrder: index,
+                textValue: component.textValue ?? null,
+                remark: component.remark ?? null,
               },
             })
           ).id;
 
-      if (component.componentType === "PER_CONTAINER") {
+      if (component.componentType === "PER_CONTAINER" || component.componentType === "PER_CONTAINER_TEXT") {
         const existingRates = existing.find((c) => c.id === componentId)?.containerRates ?? [];
         const incomingSizeIds = new Set((component.containerRates ?? []).map((r) => r.containerSizeId));
         for (const rate of existingRates) {
@@ -193,8 +155,8 @@ export async function replaceComponents(rateTemplateId: number, components: Comp
         for (const rate of component.containerRates ?? []) {
           await tx.rateTemplateContainerRate.upsert({
             where: { rateTemplateComponentId_containerSizeId: { rateTemplateComponentId: componentId, containerSizeId: rate.containerSizeId } },
-            update: { rateValue: rate.rateValue },
-            create: { rateTemplateComponentId: componentId, containerSizeId: rate.containerSizeId, rateValue: rate.rateValue },
+            update: { rateValue: rate.rateValue, textValue: rate.textValue ?? null },
+            create: { rateTemplateComponentId: componentId, containerSizeId: rate.containerSizeId, rateValue: rate.rateValue, textValue: rate.textValue ?? null },
           });
         }
       }
@@ -222,6 +184,7 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
         version: source.version + 1,
         isDefault: source.isDefault,
         createdById,
+        location: source.location,
       },
     });
 
@@ -235,6 +198,8 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
           fixedValue: component.fixedValue,
           percentageValue: component.percentageValue,
           sortOrder: component.sortOrder,
+          textValue: component.textValue,
+          remark: component.remark,
         },
       });
       if (component.containerRates.length > 0) {
@@ -243,6 +208,7 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
             rateTemplateComponentId: newComponent.id,
             containerSizeId: r.containerSizeId,
             rateValue: r.rateValue,
+            textValue: r.textValue,
           })),
         });
       }
@@ -254,7 +220,7 @@ export async function createNewVersion(rateTemplateId: number, createdById: numb
         data: { isDefault: false },
       });
     }
-    await tx.rateTemplate.update({ where: { id: source.id }, data: { isActive: false, isDefault: false } });
+    await tx.rateTemplate.update({ where: { id: source.id }, data: { isDefault: false } });
 
     return clone.id;
   });
